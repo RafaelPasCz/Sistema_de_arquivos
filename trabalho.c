@@ -25,8 +25,8 @@ struct entrada{
 };
 
 struct Node{
-	int num;
-	struct Node *prox;
+	int num; //numero do bloco
+	struct Node *prox; //proximo bloco
 };
 
 typedef struct Node node;
@@ -59,16 +59,16 @@ void insereFinal(LISTA *lista,int x){
 	novo->prox = NULL;
 	if((*lista) == NULL)
 	{
-		*lista = novo;
+		*lista = novo; //cria lista se ela não existe
 	}
 		else
 		{
 			node *aux = *lista;
 			while(aux->prox != NULL)
 			{
-				aux = aux->prox;
+				aux = aux->prox;  //ate chegar no fim da lista
 			}
-			aux->prox=novo;
+			aux->prox=novo; //adiciona novo
 		}
 }
 
@@ -116,7 +116,7 @@ void insereordenado(LISTA* lista, int valor)
     tmp = *lista;
     node* novo = (node*) malloc (sizeof(node));
     novo->num=valor;
-        while((tmp->prox)->num < novo->num)
+        while((tmp->prox)->num < novo->num) 
         {
             tmp = tmp->prox;
         }
@@ -130,20 +130,20 @@ void insereordenado(LISTA* lista, int valor)
 void removeelemento(LISTA* lista,int v)
 {
     int flag=0;
-    node* tmp,*tmpp;
+    node* tmp,*tmpp; //atual e proximo 
 
     tmp=*lista;
     tmpp = tmp->prox;
     while(tmpp->num != v && tmpp->prox != NULL)
     {
-        tmpp = tmpp->prox;
+        tmpp = tmpp->prox; 
         tmp = tmp->prox;
     }
-        if(tmpp->num == v)
+        if(tmpp->num == v) //se o proximo é o elemento a ser deletado
         {
-            tmp->prox = tmpp->prox;
+            tmp->prox = tmpp->prox; //o proximo do atual é igual ao proximo do proximo
             tmpp=NULL;
-            free(tmpp);
+            free(tmpp); //deleta
             printf("elemento removido com sucesso\n");
         }
         else if(tmpp->prox==NULL && tmpp->num != v && flag != 1)
