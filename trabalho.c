@@ -7,21 +7,21 @@ boot teste2;
 unsigned int cria_cabeca(){
     int i;
     bloco cabeca;
-    cabeca.conteudo = (char*)malloc(teste.bytes_por_bloco * sizeof(char));
-    cabeca.conteudo[0] = 0xff;
+    cabeca.conteudo = (char*)malloc(teste.bytes_por_bloco * sizeof(char)); //alocamos um conteudo com o numero de bytes por bloco
+    cabeca.conteudo[0] = 0xff;  //-1 pq é o primeiro bloco
     cabeca.conteudo[1] = 0xff;
     cabeca.conteudo[2] = 0xff;
     cabeca.conteudo[3] = 0xff;
     printf("\nentrou2\n");
     for(i=4;i < teste.bytes_por_bloco; i++){
-        cabeca.conteudo[i] = 0x00;
+        cabeca.conteudo[i] = 0x00; //enchemos o bloco com 0
     }
-    FILE *file = fopen("boot.dat", "ab");
-    fseek(file, (teste.bytes_por_bloco * teste.blocos_reservados),SEEK_SET);
-    fwrite(&cabeca, teste.bytes_por_bloco, 1, file);
+    FILE *file = fopen("boot.dat", "ab"); 
+    fseek(file, (teste.bytes_por_bloco * (teste.blocos_reservados + teste.num_blocos_tabela_entradas),SEEK_SET); //escrevemos o bloco no arquivo
+    fwrite(&cabeca, teste.bytes_por_bloco, 1, file);	//escrito no diretorio root
     fclose(file);
-    unsigned int endereco_cabeca = (long int)&cabeca/teste.bytes_por_bloco;
-    return endereco_cabeca;
+    unsigned int endereco_cabeca = (long int)&cabeca/teste.bytes_por_bloco; //convertemos o endereço logico para endereço fisico
+    return endereco_cabeca; //retornamos
 }
 
 
@@ -61,6 +61,10 @@ int formatar(){
     FILE *file = fopen("boot.dat", "wb");
     fwrite(&teste, sizeof(boot), 1, file);
     fclose(file);
+
+
+
+	
     file = fopen("boot.dat", "rb");
     fread(&teste2, sizeof(boot), 1, file);
     fclose(file);
