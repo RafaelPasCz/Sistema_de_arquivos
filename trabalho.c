@@ -1,8 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
+
+struct entrada_arquivo{
+    char status;
+    char nome[12];
+    char ext[4];
+    char tipo;
+    unsigned int primeiro_bloco;
+    unsigned int tamanho;
+    unsigned int numero_blocos_usados;
+};
+
 struct boot_record{
-    unsigned short bytes_por_bloco;          //2 bytes 
+    unsigned short bytes_por_bloco;          //2 bytes
     unsigned short blocos_reservados;        //2 bytes
     unsigned int num_blocos_livres;          //4 bytes
     unsigned int num_blocos_tabela_entradas; //...
@@ -13,9 +25,9 @@ struct boot_record{
     int padding;                             //4 bytes para completar
 };
 
-struct entrada{
+struct entrada_diretorio{
     char status;   //apenas um byte para status
-    char nome[12]; 
+    char nome[12];
     char ext[4];
     char tipo;
     unsigned int primeiro_bloco;
@@ -24,13 +36,17 @@ struct entrada{
     unsigned short padding;
 };
 
-struct Node{
-	int num; //numero do bloco
-	struct Node *prox; //proximo bloco
+
+struct Bloco{
+    struct Bloco *prox;
+	char conteudo[508];
 };
 
-typedef struct Node node;
-typedef node* LISTA; //aponta para o inicio da lista;
+
+
+typedef struct Bloco bloco;
+typedef bloco* LISTA; //aponta para o inicio da lista;
+
 
 LISTA* cria_lista(){
 	LISTA* inicio = (LISTA*) malloc (sizeof(LISTA));
@@ -47,10 +63,10 @@ LISTA* cria_lista(){
 }
 
 
-void insereFinal(LISTA *lista,int x){
+void insereFinal(LISTA *lista,char x){
 
-	node *novo = (node*) malloc (sizeof(node));
-    novo->num = x;
+	bloco *novo = (bloco*) malloc (sizeof(bloco));
+    novo->conteudo[0] = x;
 	if(novo == NULL)
 	{
 		printf("Erro ao alocar memoria(inserefinal)\n");
@@ -59,16 +75,16 @@ void insereFinal(LISTA *lista,int x){
 	novo->prox = NULL;
 	if((*lista) == NULL)
 	{
-		*lista = novo; //cria lista se ela não existe
+		*lista = novo;
 	}
 		else
 		{
-			node *aux = *lista;
+			bloco *aux = *lista;
 			while(aux->prox != NULL)
 			{
-				aux = aux->prox;  //ate chegar no fim da lista
+				aux = aux->prox;
 			}
-			aux->prox=novo; //adiciona novo
+			aux->prox=novo;
 		}
 }
 
@@ -80,11 +96,11 @@ void exibe(LISTA *lista)
 	}
 	else
 		{
-		node* aux;
+		bloco* aux;
 		aux = *lista;
 		while(aux != NULL)
 			{
-				printf("%5i", aux->num);
+				printf("%5i", aux->conteudo[0]);
 				aux = aux->prox;
 			}
 		}
@@ -99,7 +115,7 @@ void libera(LISTA *lista)
 	}
 	else
 		{
-			node *tmp;
+			bloco *tmp;
 			while((*lista) != NULL)
 			{
 				tmp = *lista;
@@ -110,13 +126,13 @@ void libera(LISTA *lista)
 }
 
 
-void insereordenado(LISTA* lista, int valor)
+/*void insereordenado(LISTA* lista, char valor)
 {
-    node *tmp;
+    bloco *tmp;
     tmp = *lista;
-    node* novo = (node*) malloc (sizeof(node));
-    novo->num=valor;
-        while((tmp->prox)->num < novo->num) 
+    bloco* novo = (bloco*) malloc (sizeof(bloco));
+    novo->conteudo[0]=valor;
+        while((tmp->prox)->num < novo->num)
         {
             tmp = tmp->prox;
         }
@@ -125,37 +141,37 @@ void insereordenado(LISTA* lista, int valor)
                 novo->prox = tmp->prox;
                 tmp->prox = novo;
             }
-}
+}*/
 
-void removeelemento(LISTA* lista,int v)
+/*void removeelemento(LISTA* lista,int v)
 {
     int flag=0;
-    node* tmp,*tmpp; //atual e proximo 
+    bloco* tmp,*tmpp;
 
     tmp=*lista;
     tmpp = tmp->prox;
     while(tmpp->num != v && tmpp->prox != NULL)
     {
-        tmpp = tmpp->prox; 
+        tmpp = tmpp->prox;
         tmp = tmp->prox;
     }
-        if(tmpp->num == v) //se o proximo é o elemento a ser deletado
+        if(tmpp->num == v)
         {
-            tmp->prox = tmpp->prox; //o proximo do atual é igual ao proximo do proximo
+            tmp->prox = tmpp->prox;
             tmpp=NULL;
-            free(tmpp); //deleta
+            free(tmpp);
             printf("elemento removido com sucesso\n");
         }
         else if(tmpp->prox==NULL && tmpp->num != v && flag != 1)
             {
                 printf("elemento nao presente na lista\n");
             }
-}
+}*/
 
 
-void eliminatdselem(LISTA* lista,int x)
+/*void eliminatdselem(LISTA* lista,int x)
 {
-    node *tmp,*aux,*rem;
+    bloco *tmp,*aux,*rem;
     int cont=0;
     if(*lista==NULL)
         {
@@ -182,7 +198,7 @@ void eliminatdselem(LISTA* lista,int x)
             }
         printf("%i elementos removidos com sucesso\n",cont);
 
-}
+}*/
 
 int testar_lista(LISTA* lista){
 
@@ -194,8 +210,8 @@ int testar_lista(LISTA* lista){
 		printf("1- insere no final\n");
 		printf("2- exibe lista\n");
 		printf("3- libera lista\n");
-		printf("4- insere ordenado\n");
-		printf("5- remove elemento especifico\n");
+	//	printf("4- insere ordenado\n");
+	//	printf("5- remove elemento especifico\n");
 		printf("0- sair do programa\n");
 		scanf("%i",&opc);
 		switch(opc)
@@ -211,7 +227,7 @@ int testar_lista(LISTA* lista){
 		case 3:
 			libera(lista);
 			break;
-        case 4:
+      /*  case 4:
             printf("insira o numero a ser inserido: ");
             scanf("%i",&x);
             insereordenado(lista,x);
@@ -220,7 +236,7 @@ int testar_lista(LISTA* lista){
             printf("insira o numero a ser removido: ");
             scanf("%i",&x);
             removeelemento(lista,x);
-            break;
+            break;*/
 		case 0:
 			free(lista);
 			printf("saindo do programa\n");
@@ -230,6 +246,15 @@ int testar_lista(LISTA* lista){
 	}while (opc != 0);
 
 }
+
+
+int procurar_espaco(){
+    //percorrer a lista de blocos
+    //pegar os endereços de bloco
+    //ordenar os endereços em ordem crescente
+    //procurar maior numero de endereços consecutivos
+}
+
 
 
 int main(){
