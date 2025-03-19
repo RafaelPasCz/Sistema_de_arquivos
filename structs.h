@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
 struct entrada_arquivo{
     char status;
     char nome[12];
@@ -10,6 +11,7 @@ struct entrada_arquivo{
     unsigned int tamanho;
     unsigned int numero_blocos_usados;
 };
+
 
 struct boot_record{
     unsigned short bytes_por_bloco;          //2 bytes

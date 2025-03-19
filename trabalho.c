@@ -1,7 +1,6 @@
 #include "structs.h"
 
-
-
+#define BLOCK_SIZE
 
 LISTA* cria_lista(){
 	LISTA* inicio = (LISTA*) malloc (sizeof(LISTA));
