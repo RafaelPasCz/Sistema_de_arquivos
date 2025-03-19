@@ -65,9 +65,8 @@ int formatar(){
     int n_entradas;
     int tamanho_total_entradas;
     printf("Insira as informacoes de formatacao\n");
-    printf("Insira o numero de bytes por bloco(1 a 65535)\n");
-    scanf("%hu",&teste.bytes_por_bloco);
 
+    teste.bytes_por_bloco = 512;
     printf("insira o tamanho do disco em bytes\n");
     scanf("%i",&tamanho_disco);
     teste.num_blocos_totais = tamanho_disco/teste.bytes_por_bloco; //separamos o disco em blocos
