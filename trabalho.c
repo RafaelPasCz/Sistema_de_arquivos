@@ -70,15 +70,20 @@ int formatar(){
     printf("Insira as informacoes de formatacao\n");
     printf("Insira o numero de bytes por bloco(1 a 65535)\n");
     scanf("%hu",&teste.bytes_por_bloco);
+
     printf("insira o tamanho do disco em bytes\n");
     scanf("%i",&tamanho_disco);
     teste.num_blocos_totais = tamanho_disco/teste.bytes_por_bloco; //blocos totais do sistema, incluindo reservados
+
     printf("insira o numero de blocos reservados (incluindo boot record)\n");
     scanf("%hu",&teste.blocos_reservados);
+
     printf("insira o numero de blocos na tabela de entradas\n");
     scanf("%i",&teste.num_blocos_tabela_entradas);
+
     printf("insira o numero de blocos reservados para o diretório raiz\n");
     scanf("%i",&teste.num_blocos_reservados_raiz);
+
     //aqui contamos o numero total de blocos que não poderão ser utilizados
     total_blocos_reservados = teste.blocos_reservados + teste.num_blocos_tabela_entradas + teste.num_blocos_reservados_raiz;
     //e subtraimos pra calcular o numero de blocos na seção de dados
@@ -89,6 +94,9 @@ int formatar(){
     teste.quant_entradas_sistema = 0;
     //criando cabeca da lista
     teste.cabeca_lista = cria_cabeca();
+}
+
+void testar_boot(){
     FILE *file = fopen("boot.dat", "wb");
     fwrite(&teste, sizeof(boot), 1, file);
     fclose(file);
@@ -102,8 +110,8 @@ int formatar(){
     printf("\nnum blocos secao de dados: %i",teste2.num_blocos_secao_dados);
     printf("\nnum blocos totais: %i",teste2.num_blocos_totais);
     printf("\nnum blocos reservados raiz: %i",teste2.num_blocos_reservados_raiz);
-    printf("\nquant entradas sistema: %i\n",teste2.quant_entradas_sistema);
-    printf("\ncabeca da lista: %i\n",teste2.cabeca_lista);
+    printf("\nquant entradas sistema: %i",teste2.quant_entradas_sistema);
+    printf("\ncabeca da lista: %i",teste2.cabeca_lista);
 
     //testar se um bloco escrito está certo
     file = fopen("boot.dat","rb");
@@ -115,25 +123,13 @@ int formatar(){
     for(i = 0;i < teste2.bytes_por_bloco;i++){
         printf("%c", lido.conteudo[i]);
     }
-
-
 }
+
+
 
 
 int main(){
 	printf("hello world\n");
 	formatar();
-    /*int opc;
-	LISTA *lista = cria_lista();
-    while(1){
-        printf("testar lista?(1 ou 0)\n");
-        scanf("%i",&opc);
-        if(opc == 1){
-            testar_lista(lista);
-        }
-        else
-            return 0;
-    }*/
-
-
+	testar_boot();
 }
