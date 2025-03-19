@@ -215,7 +215,7 @@ int testar_lista(LISTA* lista){
 		switch(opc)
 		{
 		case 1:
-            printf("insira o numero a ser inserido: ");
+            printf("insira o caracter a ser inserido: ");
             scanf(" %c",&x);
 			insereFinal(lista,x);
 			break;
