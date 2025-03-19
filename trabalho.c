@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-
 struct entrada_arquivo{
     char status;
     char nome[12];
@@ -100,7 +98,7 @@ void exibe(LISTA *lista)
 		aux = *lista;
 		while(aux != NULL)
 			{
-				printf("%5i", aux->conteudo[0]);
+				printf("%5c", aux->conteudo[0]);
 				aux = aux->prox;
 			}
 		}
@@ -203,7 +201,7 @@ void libera(LISTA *lista)
 int testar_lista(LISTA* lista){
 
     int opc;
-    int x;
+    char x;
     do
     {
 		printf("insira a funcao que deseja executar\n");
@@ -218,7 +216,7 @@ int testar_lista(LISTA* lista){
 		{
 		case 1:
             printf("insira o numero a ser inserido: ");
-            scanf("%i",&x);
+            scanf(" %c",&x);
 			insereFinal(lista,x);
 			break;
 		case 2:
