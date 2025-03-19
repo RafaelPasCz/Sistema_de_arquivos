@@ -1,28 +1,59 @@
 #include "structs.h"
-#include <stdint.h>
+#include <string.h>
 typedef struct boot_record boot;
 boot teste;
 boot teste2;
 
-unsigned int cria_cabeca(){
-    int i;
+unsigned int cria_cabeca() {
+    FILE *file;
     bloco cabeca;
-    cabeca.conteudo = (char*)malloc(teste.bytes_por_bloco * sizeof(char)); //alocamos um conteudo com o numero de bytes por bloco
-    cabeca.conteudo[0] = 0xff;  //-1 pq é o primeiro bloco
-    cabeca.conteudo[1] = 0xff;
-    cabeca.conteudo[2] = 0xff;
-    cabeca.conteudo[3] = 0xff;
-    printf("\nentrou2\n");
-    for(i=4;i < teste.bytes_por_bloco; i++){
-        cabeca.conteudo[i] = 0x00; //enchemos o bloco com 0
+    uint32_t end_fis;
+    uint32_t next_block_marker = 0xFFFFFFFF; // Marcador de fim da lista
+    unsigned char bytes[4];
+
+    // 1. Calcular o endereço físico do bloco cabeça (número do bloco)
+    // incluimos pra não escrever em cima da tabela de entradas
+    end_fis = teste.blocos_reservados + teste.num_blocos_tabela_entradas; // Bloco após os reservados
+
+    // 2. Codificar 0xFFFFFFFF em 4 bytes (little-endian)
+    bytes[0] = (next_block_marker >> 0) & 0xFF;  // Byte menos significativo
+    bytes[1] = (next_block_marker >> 8) & 0xFF;
+    bytes[2] = (next_block_marker >> 16) & 0xFF;
+    bytes[3] = (next_block_marker >> 24) & 0xFF; // Byte mais significativo
+
+    // 3. Alocar e inicializar o conteúdo do bloco
+    cabeca.conteudo = (char*)malloc(teste.bytes_por_bloco * sizeof(char));
+    if (!cabeca.conteudo) {
+        perror("Erro ao alocar memória para o bloco cabeça");
+        exit(EXIT_FAILURE);
     }
-    FILE *file = fopen("boot.dat", "ab"); 
-    fseek(file, (teste.bytes_por_bloco * (teste.blocos_reservados + teste.num_blocos_tabela_entradas),SEEK_SET); //escrevemos o bloco no arquivo
-    fwrite(&cabeca, teste.bytes_por_bloco, 1, file);	//escrito no diretorio root
+
+    // Preencher os primeiros 4 bytes com 0xFFFFFFFF, mudar depois se precisar
+    for (int i = 0; i < 4; i++) {
+        cabeca.conteudo[i] = bytes[i];
+    }
+
+    // preencher o restante do bloco com alguma coisa
+    for (int i = 4; i < teste.bytes_por_bloco; i++) {
+        cabeca.conteudo[i] = 0x41;
+    }
+
+    // 4. Escrever o bloco no disco
+    file = fopen("boot.dat", "rb+");
+    if (!file) {
+        perror("Erro ao abrir arquivo boot.dat");
+        exit(EXIT_FAILURE);
+    }
+
+    fseek(file, end_fis * teste.bytes_por_bloco, SEEK_SET); // Posicionar no bloco correto
+    fwrite(cabeca.conteudo, teste.bytes_por_bloco, 1, file);
     fclose(file);
-    unsigned int endereco_cabeca = (long int)&cabeca/teste.bytes_por_bloco; //convertemos o endereço logico para endereço fisico
-    return endereco_cabeca; //retornamos
+
+    // 5. Liberar memória e retornar
+    free(cabeca.conteudo);
+    return end_fis;
 }
+
 
 
 int procurar_espaco(){
@@ -61,10 +92,6 @@ int formatar(){
     FILE *file = fopen("boot.dat", "wb");
     fwrite(&teste, sizeof(boot), 1, file);
     fclose(file);
-
-
-
-	
     file = fopen("boot.dat", "rb");
     fread(&teste2, sizeof(boot), 1, file);
     fclose(file);
@@ -76,7 +103,19 @@ int formatar(){
     printf("\nnum blocos totais: %i",teste2.num_blocos_totais);
     printf("\nnum blocos reservados raiz: %i",teste2.num_blocos_reservados_raiz);
     printf("\nquant entradas sistema: %i\n",teste2.quant_entradas_sistema);
-    printf("\ncabeca da lista: %u\n",teste2.cabeca_lista);
+    printf("\ncabeca da lista: %i\n",teste2.cabeca_lista);
+
+    //testar se um bloco escrito está certo
+    file = fopen("boot.dat","rb");
+    bloco lido;
+    fseek(file, teste2.cabeca_lista * teste.bytes_por_bloco, SEEK_SET);
+    lido.conteudo = (char*)malloc(teste2.bytes_por_bloco * sizeof(char));
+    fread(&lido, sizeof(char) * teste2.bytes_por_bloco, 1, file);
+    int i;
+    for(i = 0;i < teste2.bytes_por_bloco;i++){
+        printf("%c", lido.conteudo[i]);
+    }
+
 
 }
 
