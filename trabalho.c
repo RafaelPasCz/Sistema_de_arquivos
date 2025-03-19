@@ -1,4 +1,4 @@
-#include "structs.c"
+#include "structs.h"
 
 
 
