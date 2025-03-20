@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 
-struct boot_record{
+struct Boot_record{
     unsigned short bytes_por_bloco;          //2 bytes
     unsigned short blocos_reservados;        //2 bytes
     unsigned int num_blocos_livres;          //4 bytes
@@ -29,7 +29,6 @@ struct Entrada{
 struct Bloco{
     char* conteudo;
 };
-
+typedef struct Boot_record boot_record;
 typedef struct Entrada entrada;
 typedef struct Bloco bloco;
-typedef bloco* LISTA; //aponta para o inicio da lista;

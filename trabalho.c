@@ -1,9 +1,9 @@
 #include "structs.h"
 #include <string.h>
 #include <math.h>
-typedef struct boot_record boot;
-boot teste;
-boot teste2;
+
+boot_record teste;
+boot_record teste2;
 
 void inicializar_secao_dados() {
     FILE *file;
@@ -49,6 +49,46 @@ void inicializar_secao_dados() {
     fclose(file);
 }
 
+void listar_blocos_livres() {
+    FILE *file = fopen("boot.dat", "rb");
+    if (!file) {
+        perror("Erro ao abrir arquivo boot.dat");
+        exit(EXIT_FAILURE);
+    }
+
+    // lê o boot record para obter a cabeça da lista e tamanho do bloco
+    boot_record boot_info;
+    fread(&boot_info, sizeof(boot_record), 1, file);
+
+    unsigned int bloco_atual = boot_info.cabeca_lista; //pegamos a cabeça da lista no boot record
+    const unsigned short bytes_por_bloco = boot_info.bytes_por_bloco; //e pegamos o tamanho do bloco
+
+    printf("Percorrendo lista de blocos livres:\n");
+    char buffer[4]; // aloca buffer para ler apenas os 4 bytes do próximo bloco
+    while (bloco_atual != 0xFFFFFFFF) { //enquanto não chegamos ao fim da lista
+
+        //posiciona  o cursor no início do bloco atual
+        fseek(file, bloco_atual * bytes_por_bloco, SEEK_SET);
+
+        // lê os primeiros 4 bytes (próximo endereço)
+        fread(buffer, sizeof(char), 4, file);
+
+        // converte de little-endian para uint32_t
+        unsigned int proximo = (buffer[3] << 24) | (buffer[2] << 16) | (buffer[1] << 8) | buffer[0];
+
+        // exibe em hexadecimal
+        printf("Bloco %u: 0x", bloco_atual);
+        for (int i = 0; i < 4; i++) {
+            printf("%02X", (char)buffer[i]);
+        }
+        printf(" -> Proximo: %u\n", proximo);
+
+        bloco_atual = proximo; // Avança para o próximo bloco
+    }
+
+    fclose(file);
+}
+
 
 
 int procurar_espaco(){
@@ -64,47 +104,45 @@ int formatar(){
     int tamanho_disco;
     int n_entradas;
     int tamanho_total_entradas;
-    printf("Insira as informacoes de formatacao\n");
-
+    teste.blocos_reservados = 1;
     teste.bytes_por_bloco = 512;
+    teste.quant_entradas_sistema = 0; //inicia em 0 porque o sistema está vazio
+    teste.num_blocos_reservados_raiz = 1;
+
+    printf("Insira as informacoes de formatacao\n");
     printf("insira o tamanho do disco em bytes\n");
     scanf("%i",&tamanho_disco);
     teste.num_blocos_totais = tamanho_disco/teste.bytes_por_bloco; //separamos o disco em blocos
 
-    printf("insira o numero de blocos reservados (incluindo boot record)\n");
-    scanf("%hu",&teste.blocos_reservados);
-
     printf("insira o numero de entradas na tabela de entradas\n");
     scanf("%i",&n_entradas); //pegamos o numero de entradas que o usuario quer
+
     tamanho_total_entradas = n_entradas * sizeof(entrada); //tamanho total da tabela de entradas em bytes
-    printf("%i\n",tamanho_total_entradas);
-    printf("%i\n",teste.bytes_por_bloco);
-    if(tamanho_total_entradas < teste.bytes_por_bloco)
+    if(tamanho_total_entradas < teste.bytes_por_bloco) //alocamos apenas um bloco se o tamanho da tabela é menor que um bloco
         teste.num_blocos_tabela_entradas = 1;
-    else
-        teste.num_blocos_tabela_entradas = (tamanho_total_entradas + teste.bytes_por_bloco - 1) / teste.bytes_por_bloco; //separamos em blocos e arredondamos para cima
-    printf("insira o numero de blocos reservados para o diretório raiz\n");
-    scanf("%i",&teste.num_blocos_reservados_raiz);
+    else                                        //separamos em blocos e arredondamos para cima
+        teste.num_blocos_tabela_entradas = (tamanho_total_entradas + teste.bytes_por_bloco - 1) / teste.bytes_por_bloco;
 
     total_blocos_reservados = teste.blocos_reservados + teste.num_blocos_tabela_entradas; //para calcular o inicio da seção de dados
     teste.num_blocos_secao_dados = teste.num_blocos_totais - total_blocos_reservados; //numero de blocos totais do sistema - (reservados + tabela de entradas)
     teste.num_blocos_livres = teste.num_blocos_secao_dados;
-    teste.quant_entradas_sistema = 0; //inicia em 0 porque o sistema está vazio
-    teste.cabeca_lista = total_blocos_reservados; //
 
-    FILE *file = fopen("boot.dat", "wb");
-    fwrite(&teste, sizeof(boot), 1, file);
+    teste.cabeca_lista = total_blocos_reservados; //deslocamento do primeiro bloco livre
+
+    FILE *file = fopen("boot.dat", "wb"); //por fim, escrevemos o arquivo
+    fwrite(&teste, sizeof(boot_record), 1, file);
     fclose(file);
 
-    inicializar_secao_dados(); // Inicializa todos os blocos da seção de dados
+
     return 0;
 }
 
-void testar_boot(){
+void testar_boot(){ //apenas pega o boot record e printa
     FILE *file;
     file = fopen("boot.dat", "rb");
-    fread(&teste2, sizeof(boot), 1, file);
+    fread(&teste2, sizeof(boot_record), 1, file);
     fclose(file);
+
     printf("Dados lidos: \nbytes_por_bloco: %hu",teste2.bytes_por_bloco);
     printf("\nblocos reservados: %hu",teste2.blocos_reservados);
     printf("\nnum blocos livres: %i",teste2.num_blocos_livres);
@@ -115,25 +153,15 @@ void testar_boot(){
     printf("\nquant entradas sistema: %i",teste2.quant_entradas_sistema);
     printf("\ncabeca da lista: %i\n",teste2.cabeca_lista);
 
-    file = fopen("boot.dat","rb");
-    bloco lido;
-    lido.conteudo = (char*)malloc(teste2.bytes_por_bloco * sizeof(char));
-    fseek(file, teste2.cabeca_lista * teste2.bytes_por_bloco, SEEK_SET);
-    fread(lido.conteudo, sizeof(char), teste2.bytes_por_bloco, file); // Correção aqui
-    fclose(file);
 
-    printf("Conteudo do primeiro bloco da lista:\n");
-    for(int i = 0; i < teste2.bytes_por_bloco; i++){
-        printf("%02X ", (char)lido.conteudo[i]);
-    }
-    printf("\n");
-    free(lido.conteudo);
 }
 
 
 
 int main(){
 	printf("hello world\n");
-	formatar();
-	testar_boot();
+	formatar(); //Coleta as informações de formatação e escreve no Boot record
+    inicializar_secao_dados(); // Inicializa todos os blocos da seção de dados
+	testar_boot(); //lê as informações do Boot Record
+	listar_blocos_livres(); //lista todos os blocos livres do sistema
 }
