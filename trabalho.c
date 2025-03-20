@@ -2,8 +2,10 @@
 #include <string.h>
 #include <math.h>
 
-boot_record teste;
-boot_record teste2;
+boot_record teste; //boot record pra formatação
+boot_record teste2; //boot record carregado na memoria em outras execuções
+
+
 
 void inicializar_secao_dados() {
     FILE *file;
@@ -49,7 +51,7 @@ void inicializar_secao_dados() {
     fclose(file);
 }
 
-void listar_blocos_livres() {
+unsigned int* listar_blocos_livres() {
     FILE *file = fopen("boot.dat", "rb");
     if (!file) {
         perror("Erro ao abrir arquivo boot.dat");
@@ -57,16 +59,16 @@ void listar_blocos_livres() {
     }
 
     // lê o boot record para obter a cabeça da lista e tamanho do bloco
-    boot_record boot_info;
-    fread(&boot_info, sizeof(boot_record), 1, file);
-
-    unsigned int bloco_atual = boot_info.cabeca_lista; //pegamos a cabeça da lista no boot record
-    const unsigned short bytes_por_bloco = boot_info.bytes_por_bloco; //e pegamos o tamanho do bloco
+    unsigned int* lista_livres;
+    lista_livres = (unsigned int*)malloc(teste2.num_blocos_livres * sizeof(unsigned int));
+    unsigned int bloco_atual = teste2.cabeca_lista; //pegamos a cabeça da lista no boot record
+    const unsigned short bytes_por_bloco = teste2.bytes_por_bloco; //e pegamos o tamanho do bloco
+    int i = 0;
 
     printf("Percorrendo lista de blocos livres:\n");
     char buffer[4]; // aloca buffer para ler apenas os 4 bytes do próximo bloco
     while (bloco_atual != 0xFFFFFFFF) { //enquanto não chegamos ao fim da lista
-
+        lista_livres[i] = bloco_atual;
         //posiciona  o cursor no início do bloco atual
         fseek(file, bloco_atual * bytes_por_bloco, SEEK_SET);
 
@@ -77,25 +79,89 @@ void listar_blocos_livres() {
         unsigned int proximo = (buffer[3] << 24) | (buffer[2] << 16) | (buffer[1] << 8) | buffer[0];
 
         // exibe em hexadecimal
-        printf("Bloco %u: 0x", bloco_atual);
-        for (int i = 0; i < 4; i++) {
-            printf("%02X", (char)buffer[i]);
-        }
-        printf(" -> Proximo: %u\n", proximo);
+      //  printf("Bloco %u: 0x", bloco_atual);
+      //  for (int i = 0; i < 4; i++) {
+      //      printf("%02X", (char)buffer[i]);
+      //  }
+      //  printf(" -> Proximo: %u\n", proximo);
 
         bloco_atual = proximo; // Avança para o próximo bloco
+        i++;
     }
-
+    return lista_livres;
     fclose(file);
 }
 
+#include <stdlib.h> // Para qsort()
 
+//função de comparação para o qsort
+//se a = 5 e b = 3, a função retorna 2, que é positivo, então b vem antes de a
+//se a = 3 e b = 5, a função retorna -2, que é negativo, então a vem antes de b
+int comparar_uint(const void *a, const void *b) {
+    return (*(unsigned int*)a - *(unsigned int*)b);
+}
 
-int procurar_espaco(){
-    //percorrer a lista de blocos
-    //pegar os endereços de bloco
-    //ordenar os endereços em ordem crescente
-    //procurar maior numero de endereços consecutivos
+unsigned int* ordenar_lista(unsigned int* lista) {
+    if(lista == NULL || teste2.num_blocos_livres == 0) {
+        return NULL;
+    }
+
+    //alocar memória para a lista ordenada
+    unsigned int* lista_ordenada = (unsigned int*)malloc(teste2.num_blocos_livres * sizeof(unsigned int));
+
+    if(!lista_ordenada) {
+        perror("Erro ao alocar memória para lista ordenada");
+        return NULL;
+    }
+
+    //copiar a lista original
+    memcpy(lista_ordenada, lista, teste2.num_blocos_livres * sizeof(unsigned int));
+
+    // Ordenar usando quicksort
+    qsort(lista_ordenada,
+          teste2.num_blocos_livres,
+          sizeof(unsigned int),
+          comparar_uint);
+
+    return lista_ordenada;
+}
+
+unsigned int* procurar_espaco(int espaco_necessario, unsigned int* lista) {
+    if (lista == NULL || teste2.num_blocos_livres < espaco_necessario) {
+        return NULL;
+    }
+
+    //aloca memória para o resultado, início e final da sequencia contigua
+    unsigned int* resultado = (unsigned int*)malloc(2 * sizeof(unsigned int));
+    if (!resultado) {
+        perror("Erro ao alocar memória para resultado");
+        return NULL;
+    }
+
+    int contador = 1;
+    unsigned int inicio_sequencia = lista[0]; //inicializa a sequencia no começo da lista
+
+    for (int i = 1; i < teste2.num_blocos_livres; i++) {
+        //verifica se o bloco atual é consecutivo ao anterior
+        if (lista[i] == lista[i - 1] + 1) {
+            contador++;
+        } else {
+            //reinicia a contagem e atualiza o início da sequência
+            contador = 1;
+            inicio_sequencia = lista[i];
+        }
+
+        //se encontrou uma sequência válida
+        if (contador >= espaco_necessario) {
+            resultado[0] = inicio_sequencia; //retorna o vetor com o inicio
+            resultado[1] = inicio_sequencia + espaco_necessario - 1; //e o fim da sequencia livre
+            return resultado;
+        }
+    }
+
+    //nenhuma sequência encontrada
+    free(resultado);
+    return NULL;
 }
 
 
@@ -133,11 +199,10 @@ int formatar(){
     fwrite(&teste, sizeof(boot_record), 1, file);
     fclose(file);
 
-
     return 0;
 }
 
-void testar_boot(){ //apenas pega o boot record e printa
+void ler_boot(){ //apenas pega o boot record e printa
     FILE *file;
     file = fopen("boot.dat", "rb");
     fread(&teste2, sizeof(boot_record), 1, file);
@@ -159,9 +224,35 @@ void testar_boot(){ //apenas pega o boot record e printa
 
 
 int main(){
+    unsigned int* lista_livres;
+    unsigned int* lista_ordenado;
+    unsigned int* espaco_livre; //contem o deslocamento inicial e final do espaço livre necessário
+    int i = 0;
 	printf("hello world\n");
+
+    //essas duas funções só serão chamadas na formatação
 	formatar(); //Coleta as informações de formatação e escreve no Boot record
     inicializar_secao_dados(); // Inicializa todos os blocos da seção de dados
-	testar_boot(); //lê as informações do Boot Record
-	listar_blocos_livres(); //lista todos os blocos livres do sistema
+
+    //função de ler boot para outras execuções
+	ler_boot();
+
+    //lista todos os blocos livres do sistema
+	lista_livres = listar_blocos_livres();
+    printf("listando blocos livres\n");
+    for(i = 0; i < teste.num_blocos_livres; i++){
+        printf("%u ",lista_livres[i]);
+    }
+
+    //testar ordenação de lista
+    lista_ordenado = ordenar_lista(lista_livres);
+    printf("\nlistando ordenado\n");
+    for(i = 0; i < teste.num_blocos_livres; i++){
+        printf("%u ",lista_ordenado[i]);
+    }
+
+    //testar a busca por espaços, recebe o numero de espaços necessário e a lista ordenada
+    espaco_livre = procurar_espaco(5,lista_ordenado);
+    printf("\nespaco de 2 blocos livres: %i a %i\n", espaco_livre[0],espaco_livre[1]);
+    return 0;
 }
