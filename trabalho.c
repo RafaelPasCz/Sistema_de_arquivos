@@ -1,7 +1,7 @@
 #include "structs.h"
 #include <string.h>
 #include <math.h>
-
+#include <stdlib.h>
 boot_record teste; //boot record pra formatação
 boot_record teste2; //boot record carregado na memoria em outras execuções
 
@@ -92,7 +92,6 @@ unsigned int* listar_blocos_livres() {
     fclose(file);
 }
 
-#include <stdlib.h> // Para qsort()
 
 //função de comparação para o qsort
 //se a = 5 e b = 3, a função retorna 2, que é positivo, então b vem antes de a
