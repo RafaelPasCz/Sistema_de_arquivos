@@ -224,7 +224,7 @@ int formatar(){
                                             // numero de blocos totais do sistema - (reservados + tabela de entradas)
     teste.num_blocos_livres = teste.num_blocos_secao_dados;
 
-    teste.cabeca_lista = total_blocos_reservados - 1;   // Obtemos o endereço do primeiro bloco livre (-1 pq começa em 0)
+    teste.cabeca_lista = total_blocos_reservados;       // Obtemos o endereço do primeiro bloco livre
 
     FILE *file = fopen(nome_arquivo, "wb");             // Abrimos o arquivo
     fwrite(&teste, sizeof(boot_record), 1, file);
@@ -309,7 +309,7 @@ int main(){
     /*
     */
 
-    printf("\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+    printf("\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
     //lista todos os blocos livres do sistema
     lista_livres = listar_blocos_livres();
     printf("listando blocos livres\n");
