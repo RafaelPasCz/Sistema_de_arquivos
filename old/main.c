@@ -2,13 +2,10 @@
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
+boot_record teste; //boot record pra formatação
+boot_record teste2; //boot record carregado na memoria em outras execuções
 
-boot_record sistema;    // boot record do sistema de arquivos em memória
 
-boot_record teste;      // boot record pra formatação
-boot_record teste2;     // boot record carregado na memoria em outras execuções
-
-#define BLOCK_SIZE 512
 
 void inicializar_secao_dados() {
     FILE *file;
@@ -54,7 +51,6 @@ void inicializar_secao_dados() {
     fclose(file);
 }
 
-
 unsigned int* listar_blocos_livres() {
     FILE *file = fopen("boot.dat", "rb");
     if (!file) {
@@ -92,8 +88,8 @@ unsigned int* listar_blocos_livres() {
         bloco_atual = proximo; // Avança para o próximo bloco
         i++;
     }
-    fclose(file);
     return lista_livres;
+    fclose(file);
 }
 
 
@@ -169,64 +165,36 @@ unsigned int* procurar_espaco(int espaco_necessario, unsigned int* lista) {
 
 
 int formatar(){
-    int total_blocos_reservados, tamanho_disco, n_entradas, tamanho_total_entradas;
-    int continuar = 1;          // Usado na validação dos inputs
-    char nome_arquivo[256];     // Arquivo a ser formatado
+    int total_blocos_reservados;
+    int tamanho_disco;
+    int n_entradas;
+    int tamanho_total_entradas;
+    teste.blocos_reservados = 1;
+    teste.bytes_por_bloco = 512;
+    teste.quant_entradas_sistema = 0; //inicia em 0 porque o sistema está vazio
+    teste.num_blocos_reservados_raiz = 1;
 
-    printf("\n=--=- Informacoes de Formatacao\n");        
-    printf("=-- Insira o nome do arquivo a ser criado e formatado para a simulacao\nR: ");
+    printf("Insira as informacoes de formatacao\n");
+    printf("insira o tamanho do disco em bytes\n");
+    scanf("%i",&tamanho_disco);
+    teste.num_blocos_totais = tamanho_disco/teste.bytes_por_bloco; //separamos o disco em blocos
 
-    // Lemos o nome do arquivo, junto com alguns tratamentos de strings. Cortesia do StackOverflow
-    while (getchar() != '\n');
-    if (fgets(nome_arquivo, sizeof(nome_arquivo), stdin)) {
-        nome_arquivo[strcspn(nome_arquivo, "\n")] = '\0'; // Remove o '\n' do final
-    }
+    printf("insira o numero de entradas na tabela de entradas\n");
+    scanf("%i",&n_entradas); //pegamos o numero de entradas que o usuario quer
 
-    printf("Arquivo escolhido: %s\n", nome_arquivo);
-
-
-
-    while (continuar){                      // Recebemos e validamos os inputs do usuário
-        printf("=-- Insira o tamanho do disco, em bytes\nR: ");
-        scanf("%i",&tamanho_disco);
-        
-        printf("=-- Insira o numero de entradas na tabela de entradas\nR: ");
-        scanf("%i",&n_entradas);
-        
-        // TODO - É 4 se considerarmos o root directory (1 bloco)
-        if (tamanho_disco >= (3 * BLOCK_SIZE)                           // O disco armazena no mínimo 3 blocos (boot_r, tabela, dados)?
-            && n_entradas <= ((int)(tamanho_disco / BLOCK_SIZE)) - 2 ){ // Não pode ter mais entradas do que blocos de dados
-            // Não é necessário verificar se o tamanho da partição é suficiente pra tabela de entradas.
-            
-            continuar = 0;  // Se os inputs forem válidos, continua a execução
-
-        } else {            // Se não, pede novamente os inputs
-            printf("\n\n=-- DADOS INVALIDOS!!!\n");
-        }
-    }
-
-    teste.bytes_por_bloco = BLOCK_SIZE;     // Quantidade fixa de blocos por byte.
-    teste.blocos_reservados = 1;            // Quantidade de blocos reservados: 1 (boot record) (adicionar mais 1? root dir?)
-    teste.quant_entradas_sistema = 0;       // inicia em 0 porque o sistema está vazio
-    teste.num_blocos_reservados_raiz = 1;   // Numero de blocos reservados para o root directory
-    teste.num_blocos_totais = tamanho_disco/teste.bytes_por_bloco;  // separamos o disco em blocos
-
-    tamanho_total_entradas = n_entradas * sizeof(entrada);          // tamanho total da tabela de entradas em bytes
-
-    if(tamanho_total_entradas < teste.bytes_por_bloco){             // alocamos apenas um bloco se o tamanho da tabela é menor que um bloco
+    tamanho_total_entradas = n_entradas * sizeof(entrada); //tamanho total da tabela de entradas em bytes
+    if(tamanho_total_entradas < teste.bytes_por_bloco) //alocamos apenas um bloco se o tamanho da tabela é menor que um bloco
         teste.num_blocos_tabela_entradas = 1;
-    }else{                                                          // separamos em blocos e arredondamos para cima
+    else                                        //separamos em blocos e arredondamos para cima
         teste.num_blocos_tabela_entradas = (tamanho_total_entradas + teste.bytes_por_bloco - 1) / teste.bytes_por_bloco;
-    }
 
-    total_blocos_reservados = teste.blocos_reservados + teste.num_blocos_tabela_entradas;   // para calcular o inicio da seção de dados
-    teste.num_blocos_secao_dados = teste.num_blocos_totais - total_blocos_reservados;       
-                                            // numero de blocos totais do sistema - (reservados + tabela de entradas)
+    total_blocos_reservados = teste.blocos_reservados + teste.num_blocos_tabela_entradas; //para calcular o inicio da seção de dados
+    teste.num_blocos_secao_dados = teste.num_blocos_totais - total_blocos_reservados; //numero de blocos totais do sistema - (reservados + tabela de entradas)
     teste.num_blocos_livres = teste.num_blocos_secao_dados;
 
-    teste.cabeca_lista = total_blocos_reservados - 1;   // Obtemos o endereço do primeiro bloco livre (-1 pq começa em 0)
+    teste.cabeca_lista = total_blocos_reservados; //deslocamento do primeiro bloco livre
 
-    FILE *file = fopen(nome_arquivo, "wb");             // Abrimos o arquivo
+    FILE *file = fopen("boot.dat", "wb"); //por fim, escrevemos o arquivo
     fwrite(&teste, sizeof(boot_record), 1, file);
     fclose(file);
 
@@ -258,69 +226,27 @@ int main(){
     unsigned int* lista_livres;
     unsigned int* lista_ordenado;
     unsigned int* espaco_livre; //contem o deslocamento inicial e final do espaço livre necessário
-    int operacao = 0, i = 0, continuar = 1;
-
-
+    int i = 0;
 	printf("hello world\n");
 
-    // //essas duas funções só serão chamadas na formatação
-	// formatar(); //Coleta as informações de formatação e escreve no Boot record
-    // inicializar_secao_dados(); // Inicializa todos os blocos da seção de dados
+    //essas duas funções só serão chamadas na formatação
+	formatar(); //Coleta as informações de formatação e escreve no Boot record
+    inicializar_secao_dados(); // Inicializa todos os blocos da seção de dados
 
-    while(continuar){
-        printf("\n\n==----------- Sistema de Arquivos -----------==\n");
-        printf("=--=- O que deseja fazer?\n");        
-        printf("=--[1] Formatar uma particao simulada\n");
-        printf("=--[2] Carregar uma particao simulada\n");
-        printf("=--[3] Sair\nR: ");
-        scanf("%i", &operacao);
+    //função de ler boot para outras execuções
+	ler_boot();
 
-        switch(operacao){
-            case 1:
-                formatar();
-                inicializar_secao_dados();  // Inicializa todos os blocos da seção de dados
-                break;
-
-            case 2:
-                //função de ler boot para outras execuções
-	            ler_boot();
-                break;
-            
-            case 3:
-                printf("Tchau!\n");
-                continuar = 0;
-                break;
-            
-            default:
-                printf("Opcao invalida!\n");
-
-        }
-
-    }
-
-
-
-
-
-
-
-
-    
-    /*
-    */
-
-    printf("\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
     //lista todos os blocos livres do sistema
-    lista_livres = listar_blocos_livres();
+	lista_livres = listar_blocos_livres();
     printf("listando blocos livres\n");
-    for(i = 0; i < teste2.num_blocos_livres; i++){
+    for(i = 0; i < teste.num_blocos_livres; i++){
         printf("%u ",lista_livres[i]);
     }
 
     //testar ordenação de lista
     lista_ordenado = ordenar_lista(lista_livres);
     printf("\nlistando ordenado\n");
-    for(i = 0; i < teste2.num_blocos_livres; i++){
+    for(i = 0; i < teste.num_blocos_livres; i++){
         printf("%u ",lista_ordenado[i]);
     }
 
