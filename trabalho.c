@@ -3,30 +3,53 @@
 #include <math.h>
 #include <stdlib.h>
 
-boot_record sistema;    // boot record do sistema de arquivos em memória
-
-boot_record teste;      // boot record pra formatação
-boot_record teste2;     // boot record carregado na memoria em outras execuções
-
 #define BLOCK_SIZE 512
 
-void inicializar_secao_dados() {
-    FILE *file;
-    uint32_t inicio_secao = teste.blocos_reservados + teste.num_blocos_tabela_entradas; //tabela de entradas não faz parte daa seção de dados
-    uint32_t num_blocos = teste.num_blocos_secao_dados; //definido nos calculos do boot recotd
 
-    file = fopen("boot.dat", "rb+");
-    if (!file) {
-        perror("Erro ao abrir arquivo boot.dat");
+boot_record br_sistema;         // boot record do sistema de arquivos em memória
+boot_record teste2;             // boot record carregado na memoria em outras execuções
+char nome_arquivo[256];         // Arquivo a ser usado para simular o sistema de arquivos
+
+
+
+void get_nomeArquivo(){         // Função que pede o nome do arquivo ao usuário, e armazena ele numa var global
+    printf("=-- Insira o nome do arquivo a ser usado\nR: ");
+
+    while (getchar() != '\n');  // Limpa o buffer
+
+    if (fgets(nome_arquivo, sizeof(nome_arquivo), stdin)) {
+        nome_arquivo[strcspn(nome_arquivo, "\n")] = '\0';   // Remove o '\n' do final
+    }   // Lemos o nome do arquivo, junto com alguns tratamentos de strings. Cortesia do StackOverflow
+    
+    printf("Arquivo escolhido: %s\n", nome_arquivo);
+}
+
+
+void inicializar_secao_dados(char *nome_arquivo) {
+    //  Recebe o nome de um arquivo, abre ele
+    //  Abre ele
+    //  Obtém o começo, e o tamanho da seção de dados
+    //  A partir do primeiro endereço, percorre a seção de dados, criando a lista de blocos livres
+        // Adiciona um ponteiro de 4 bytes para o próximo bloco, no começo de cada bloco
+    //  Escreve no arquivo, e libera os espaços alocados
+
+    FILE *file;
+    uint32_t inicio_secao = br_sistema.blocos_reservados + br_sistema.num_blocos_tabela_entradas;   // Obtem o endereço do primeiro bloco da seção de dados
+    uint32_t num_blocos = br_sistema.num_blocos_secao_dados;    // Obtem o tamnho total da seção de dados
+
+    file = fopen(nome_arquivo, "rb+");          
+    if (!file) {                                                // Verifica se foi aberto corretamente
+        printf("\n\nArquivo %s", nome_arquivo);
+        perror("Erro ao abrir arquivo");
         exit(EXIT_FAILURE);
     }
 
     for (uint32_t i = 0; i < num_blocos; i++) {
-        uint32_t endereco_atual = inicio_secao + i; //inicio da seção de dados é o primeiro endereço
-        uint32_t proximo_endereco; //inicializamos a variavel para calcular o proximo endereço
+        uint32_t endereco_atual = inicio_secao + i; // Vai caminhando por cada bloco da seção de dados
+        uint32_t proximo_endereco;                  // Variavel para calcular o proximo endereço
 
         if (i == num_blocos - 1) {
-            proximo_endereco = 0xFFFFFFFF; //se chegamos ao ultimo bloco, proximo = -1
+            proximo_endereco = 0xFFFFFFFF;          // Se chegamos ao ultimo bloco, proximo = -1
         } else {
             proximo_endereco = endereco_atual + 1; //proximo endereço é apenas o atual + 1
         }
@@ -37,28 +60,28 @@ void inicializar_secao_dados() {
         bytes[2] = (proximo_endereco >> 16) & 0xFF;
         bytes[3] = (proximo_endereco >> 24) & 0xFF;
 
-        char *conteudo_bloco = (char*)malloc(teste.bytes_por_bloco); //alocamos o conteudo para o bloco
+        char *conteudo_bloco = (char*)malloc(br_sistema.bytes_por_bloco); //alocamos o conteudo para o bloco
         if (!conteudo_bloco) {
             perror("Erro ao alocar memória para o bloco");
             exit(EXIT_FAILURE);
         }
 
-        memcpy(conteudo_bloco, bytes, 4); //os primeiros 4 bytes guardam o proximo endereço
-        memset(conteudo_bloco + 4, 0x00, teste.bytes_por_bloco - 4); //o restante enchemos de 0
+        memcpy(conteudo_bloco, bytes, 4);                                   // Os primeiros 4 bytes guardam o proximo endereço
+        memset(conteudo_bloco + 4, 0x00, br_sistema.bytes_por_bloco - 4);   // O restante enchemos de 0
 
-        fseek(file, endereco_atual * teste.bytes_por_bloco, SEEK_SET); //atualizamos o cursor, deslocamento atual * tamanho do bloco
-        fwrite(conteudo_bloco, teste.bytes_por_bloco, 1, file); //escrevemos o conteudo do bloco
+        fseek(file, endereco_atual * br_sistema.bytes_por_bloco, SEEK_SET); // Movemos o cursor, deslocamento atual * tamanho do bloco
+        fwrite(conteudo_bloco, br_sistema.bytes_por_bloco, 1, file);        // Escrevemos o conteudo do bloco
 
-        free(conteudo_bloco); //liberamos o ponteiro
+        free(conteudo_bloco);   // Liberamos o ponteiro
     }
-    fclose(file);
+    fclose(file);               // Fecha o arquivo após a execução
 }
 
 
-unsigned int* listar_blocos_livres() {
-    FILE *file = fopen("boot.dat", "rb");
+unsigned int* listar_blocos_livres(char *nome_arquivo) {
+    FILE *file = fopen(nome_arquivo, "rb");
     if (!file) {
-        perror("Erro ao abrir arquivo boot.dat");
+        perror("Erro ao abrir arquivo");
         exit(EXIT_FAILURE);
     }
 
@@ -95,6 +118,9 @@ unsigned int* listar_blocos_livres() {
     fclose(file);
     return lista_livres;
 }
+
+
+
 
 
 //função de comparação para o qsort
@@ -168,25 +194,20 @@ unsigned int* procurar_espaco(int espaco_necessario, unsigned int* lista) {
 }
 
 
-int formatar(){
+int formatar(char *nome_arquivo){
+    //  Recebe o nome do arquivo aonde será feita a simulação do sistema de arquivos
+    //  Pede para o usuário o tamanho do disco (simulado), e o número de entradas da tabela de entradas
+    //  Valida os dados inseridos
+    //  Gera a stuct do boot record, calcula e insere os dados na struct
+    //  Salva a struct no arquivo
+    //  Retorna 0 caso tudo der certo
+
     int total_blocos_reservados, tamanho_disco, n_entradas, tamanho_total_entradas;
     int continuar = 1;          // Usado na validação dos inputs
-    char nome_arquivo[256];     // Arquivo a ser formatado
-
-    printf("\n=--=- Informacoes de Formatacao\n");        
-    printf("=-- Insira o nome do arquivo a ser criado e formatado para a simulacao\nR: ");
-
-    // Lemos o nome do arquivo, junto com alguns tratamentos de strings. Cortesia do StackOverflow
-    while (getchar() != '\n');
-    if (fgets(nome_arquivo, sizeof(nome_arquivo), stdin)) {
-        nome_arquivo[strcspn(nome_arquivo, "\n")] = '\0'; // Remove o '\n' do final
-    }
-
-    printf("Arquivo escolhido: %s\n", nome_arquivo);
-
-
+    
 
     while (continuar){                      // Recebemos e validamos os inputs do usuário
+        printf("\n=--=- Informacoes de Formatacao\n");    
         printf("=-- Insira o tamanho do disco, em bytes\nR: ");
         scanf("%i",&tamanho_disco);
         
@@ -205,37 +226,48 @@ int formatar(){
         }
     }
 
-    teste.bytes_por_bloco = BLOCK_SIZE;     // Quantidade fixa de blocos por byte.
-    teste.blocos_reservados = 1;            // Quantidade de blocos reservados: 1 (boot record) (adicionar mais 1? root dir?)
-    teste.quant_entradas_sistema = 0;       // inicia em 0 porque o sistema está vazio
-    teste.num_blocos_reservados_raiz = 1;   // Numero de blocos reservados para o root directory
-    teste.num_blocos_totais = tamanho_disco/teste.bytes_por_bloco;  // separamos o disco em blocos
+    br_sistema.bytes_por_bloco = BLOCK_SIZE;     // Quantidade fixa de blocos por byte.
+    br_sistema.blocos_reservados = 1;            // Quantidade de blocos reservados: 1 (boot record) (adicionar mais 1? root dir?)
+    br_sistema.quant_entradas_sistema = 0;       // inicia em 0 porque o sistema está vazio
+    br_sistema.num_blocos_reservados_raiz = 1;   // Numero de blocos reservados para o root directory
+    br_sistema.num_blocos_totais = tamanho_disco/br_sistema.bytes_por_bloco;  // separamos o disco em blocos
 
     tamanho_total_entradas = n_entradas * sizeof(entrada);          // tamanho total da tabela de entradas em bytes
 
-    if(tamanho_total_entradas < teste.bytes_por_bloco){             // alocamos apenas um bloco se o tamanho da tabela é menor que um bloco
-        teste.num_blocos_tabela_entradas = 1;
+    if(tamanho_total_entradas < br_sistema.bytes_por_bloco){             // alocamos apenas um bloco se o tamanho da tabela é menor que um bloco
+        br_sistema.num_blocos_tabela_entradas = 1;
     }else{                                                          // separamos em blocos e arredondamos para cima
-        teste.num_blocos_tabela_entradas = (tamanho_total_entradas + teste.bytes_por_bloco - 1) / teste.bytes_por_bloco;
+        br_sistema.num_blocos_tabela_entradas = (tamanho_total_entradas + br_sistema.bytes_por_bloco - 1) / br_sistema.bytes_por_bloco;
     }
 
-    total_blocos_reservados = teste.blocos_reservados + teste.num_blocos_tabela_entradas;   // para calcular o inicio da seção de dados
-    teste.num_blocos_secao_dados = teste.num_blocos_totais - total_blocos_reservados;       
+    total_blocos_reservados = br_sistema.blocos_reservados + br_sistema.num_blocos_tabela_entradas;   // para calcular o inicio da seção de dados
+    br_sistema.num_blocos_secao_dados = br_sistema.num_blocos_totais - total_blocos_reservados;       
                                             // numero de blocos totais do sistema - (reservados + tabela de entradas)
-    teste.num_blocos_livres = teste.num_blocos_secao_dados;
+    br_sistema.num_blocos_livres = br_sistema.num_blocos_secao_dados;
 
-    teste.cabeca_lista = total_blocos_reservados;       // Obtemos o endereço do primeiro bloco livre
+    br_sistema.cabeca_lista = total_blocos_reservados;       // Obtemos o endereço do primeiro bloco livre
 
     FILE *file = fopen(nome_arquivo, "wb");             // Abrimos o arquivo
-    fwrite(&teste, sizeof(boot_record), 1, file);
+
+    if (!file) {
+        printf("\n\nErro ao abrir o arquivo %s!\n", nome_arquivo);
+        return 1;
+    }
+
+    fwrite(&br_sistema, sizeof(boot_record), 1, file);
     fclose(file);
 
     return 0;
 }
 
-void ler_boot(){ //apenas pega o boot record e printa
+
+void ler_boot(){ 
+    //  Abre o arquivo escolhido antes pelo usuário
+    //  Lê o arquivo, armazena o boot record numa struct
+    //  Printa os dados armazenadosna struct
+
     FILE *file;
-    file = fopen("boot.dat", "rb");
+    file = fopen(nome_arquivo, "rb");
     fread(&teste2, sizeof(boot_record), 1, file);
     fclose(file);
 
@@ -253,19 +285,13 @@ void ler_boot(){ //apenas pega o boot record e printa
 }
 
 
-
 int main(){
     unsigned int* lista_livres;
     unsigned int* lista_ordenado;
-    unsigned int* espaco_livre; //contem o deslocamento inicial e final do espaço livre necessário
+    unsigned int* espaco_livre; // contem o deslocamento inicial e final do espaço livre necessário
     int operacao = 0, i = 0, continuar = 1;
 
-
 	printf("hello world\n");
-
-    // //essas duas funções só serão chamadas na formatação
-	// formatar(); //Coleta as informações de formatação e escreve no Boot record
-    // inicializar_secao_dados(); // Inicializa todos os blocos da seção de dados
 
     while(continuar){
         printf("\n\n==----------- Sistema de Arquivos -----------==\n");
@@ -277,12 +303,18 @@ int main(){
 
         switch(operacao){
             case 1:
-                formatar();
-                inicializar_secao_dados();  // Inicializa todos os blocos da seção de dados
+                get_nomeArquivo();
+
+                formatar(nome_arquivo);                 // Cria o boot record
+                inicializar_secao_dados(nome_arquivo);  // Inicializa todos os blocos da seção de dados
+
+                memset(&br_sistema, 0, sizeof(br_sistema));   // Limpa os dados armazenados nas structs 
+
                 break;
 
             case 2:
                 //função de ler boot para outras execuções
+                get_nomeArquivo();
 	            ler_boot();
                 break;
             
@@ -301,17 +333,12 @@ int main(){
 
 
 
-
-
-
-
-    
     /*
     */
-
     printf("\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+    get_nomeArquivo();
     //lista todos os blocos livres do sistema
-    lista_livres = listar_blocos_livres();
+    lista_livres = listar_blocos_livres(nome_arquivo);
     printf("listando blocos livres\n");
     for(i = 0; i < teste2.num_blocos_livres; i++){
         printf("%u ",lista_livres[i]);
