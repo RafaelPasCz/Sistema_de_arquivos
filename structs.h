@@ -14,7 +14,7 @@ struct Boot_record{
     unsigned int num_blocos_reservados_raiz;    // 4 bytes
     uint32_t cabeca_lista;                      // 4 bytes      Não teria que usar uint32_t em tudo?            
     unsigned int quant_entradas_sistema;        // 4 bytes, 
-};
+} __attribute__((packed));
 
 
 struct Entrada{
@@ -26,12 +26,12 @@ struct Entrada{
     unsigned int tamanho;
     unsigned int numero_blocos_usados;
     unsigned short padding;
-};
+} __attribute__((packed));
 
 
 struct Bloco{
     char conteudo[BLOCK_SIZE];
-};
+} __attribute__((packed));
 
 typedef struct Boot_record boot_record;
 typedef struct Entrada entrada;
