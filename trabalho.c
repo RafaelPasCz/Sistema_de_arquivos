@@ -3,19 +3,18 @@
 #include <math.h>
 #include <stdlib.h>
 
-#define BLOCK_SIZE 512
+
+char nome_arquivo[256];             // Arquivo a ser usado para simular o sistema de arquivos
+boot_record br_sistema;             // boot record do sistema de arquivos em memória
+entrada *entrada_sistema = NULL;    // Lista que armazena a tabela de entradas do sistema de arquivos em memória (alocado com malloc)
+bloco   *dados_sistema = NULL;      // Lista que armazena os blocos da seção de dados do sistema de arquivos em memória
 
 
-boot_record br_sistema;         // boot record do sistema de arquivos em memória
-boot_record teste2;             // boot record carregado na memoria em outras execuções
-char nome_arquivo[256];         // Arquivo a ser usado para simular o sistema de arquivos
 
-
-
-void get_nomeArquivo(){         // Função que pede o nome do arquivo ao usuário, e armazena ele numa var global
+void get_nomeArquivo(){             // Função que pede o nome do arquivo ao usuário, e armazena ele numa var global
     printf("=-- Insira o nome do arquivo a ser usado\nR: ");
 
-    while (getchar() != '\n');  // Limpa o buffer
+    while (getchar() != '\n');      // Limpa o buffer
 
     if (fgets(nome_arquivo, sizeof(nome_arquivo), stdin)) {
         nome_arquivo[strcspn(nome_arquivo, "\n")] = '\0';   // Remove o '\n' do final
@@ -60,7 +59,7 @@ void inicializar_secao_dados(char *nome_arquivo) {
         bytes[2] = (proximo_endereco >> 16) & 0xFF;
         bytes[3] = (proximo_endereco >> 24) & 0xFF;
 
-        char *conteudo_bloco = (char*)malloc(br_sistema.bytes_por_bloco); //alocamos o conteudo para o bloco
+        char *conteudo_bloco = (char*)malloc(br_sistema.bytes_por_bloco);   // Alocamos o conteudo para o bloco
         if (!conteudo_bloco) {
             perror("Erro ao alocar memória para o bloco");
             exit(EXIT_FAILURE);
@@ -78,8 +77,20 @@ void inicializar_secao_dados(char *nome_arquivo) {
 }
 
 
+
+
+
 unsigned int* listar_blocos_livres(char *nome_arquivo) {
+    //  Recebe um nome de arquivo, abre ele
+    //  Obtém o tamanho da lista de blocos livres do arquivo
+    //  Obtém o ponteiro do começo dessa lista
+    //  Cria uma lista, que vai armazenar o endereço de cada bloco livre
+    //  Percorre a seção de dados, passando apenas pelos blocos livres
+        //  Sempre que passa por um bloco livre, armazena seu endereço, e coleta o ponteiro do próximo bloco
+        //  Avança para o próximo bloco. Repete até chegar no último bloco (ponteiro == 0xFFFFFFFF)
+
     FILE *file = fopen(nome_arquivo, "rb");
+
     if (!file) {
         perror("Erro ao abrir arquivo");
         exit(EXIT_FAILURE);
@@ -87,19 +98,24 @@ unsigned int* listar_blocos_livres(char *nome_arquivo) {
 
     // lê o boot record para obter a cabeça da lista e tamanho do bloco
     unsigned int* lista_livres;
-    lista_livres = (unsigned int*)malloc(teste2.num_blocos_livres * sizeof(unsigned int));
-    unsigned int bloco_atual = teste2.cabeca_lista; //pegamos a cabeça da lista no boot record
-    const unsigned short bytes_por_bloco = teste2.bytes_por_bloco; //e pegamos o tamanho do bloco
+    lista_livres = (unsigned int*)malloc(br_sistema.num_blocos_livres * sizeof(unsigned int));
+    // Aloca um espaço na memória do tamanho da lista de blocos livres (será tratado como array de unsigned ints)
+    // Unsigned int tem 32 bits (4 bytes). O mesmo tamanho que o ponteiro 
+
+    unsigned int bloco_atual = br_sistema.cabeca_lista;                 // Pegamos a cabeça da lista de blocos livres no boot record
+
+    const unsigned short bytes_por_bloco = br_sistema.bytes_por_bloco;  // E pegamos o tamanho do bloco
     int i = 0;
 
     printf("Percorrendo lista de blocos livres:\n");
     char buffer[4]; // aloca buffer para ler apenas os 4 bytes do próximo bloco
+
     while (bloco_atual != 0xFFFFFFFF) { //enquanto não chegamos ao fim da lista
         lista_livres[i] = bloco_atual;
         //posiciona  o cursor no início do bloco atual
         fseek(file, bloco_atual * bytes_por_bloco, SEEK_SET);
 
-        // lê os primeiros 4 bytes (próximo endereço)
+        // lê os primeiros 4 bytes (próximo endereço), para coletar o endereço do próximo bloco
         fread(buffer, sizeof(char), 4, file);
 
         // converte de little-endian para uint32_t
@@ -131,12 +147,12 @@ int comparar_uint(const void *a, const void *b) {
 }
 
 unsigned int* ordenar_lista(unsigned int* lista) {
-    if(lista == NULL || teste2.num_blocos_livres == 0) {
+    if(lista == NULL || br_sistema.num_blocos_livres == 0) {
         return NULL;
     }
 
     //alocar memória para a lista ordenada
-    unsigned int* lista_ordenada = (unsigned int*)malloc(teste2.num_blocos_livres * sizeof(unsigned int));
+    unsigned int* lista_ordenada = (unsigned int*)malloc(br_sistema.num_blocos_livres * sizeof(unsigned int));
 
     if(!lista_ordenada) {
         perror("Erro ao alocar memória para lista ordenada");
@@ -144,11 +160,11 @@ unsigned int* ordenar_lista(unsigned int* lista) {
     }
 
     //copiar a lista original
-    memcpy(lista_ordenada, lista, teste2.num_blocos_livres * sizeof(unsigned int));
+    memcpy(lista_ordenada, lista, br_sistema.num_blocos_livres * sizeof(unsigned int));
 
     // Ordenar usando quicksort
     qsort(lista_ordenada,
-          teste2.num_blocos_livres,
+          br_sistema.num_blocos_livres,
           sizeof(unsigned int),
           comparar_uint);
 
@@ -156,7 +172,7 @@ unsigned int* ordenar_lista(unsigned int* lista) {
 }
 
 unsigned int* procurar_espaco(int espaco_necessario, unsigned int* lista) {
-    if (lista == NULL || teste2.num_blocos_livres < espaco_necessario) {
+    if (lista == NULL || br_sistema.num_blocos_livres < espaco_necessario) {
         return NULL;
     }
 
@@ -170,7 +186,7 @@ unsigned int* procurar_espaco(int espaco_necessario, unsigned int* lista) {
     int contador = 1;
     unsigned int inicio_sequencia = lista[0]; //inicializa a sequencia no começo da lista
 
-    for (int i = 1; i < teste2.num_blocos_livres; i++) {
+    for (int i = 1; i < br_sistema.num_blocos_livres; i++) {
         //verifica se o bloco atual é consecutivo ao anterior
         if (lista[i] == lista[i - 1] + 1) {
             contador++;
@@ -261,25 +277,162 @@ int formatar(char *nome_arquivo){
 }
 
 
-void ler_boot(){ 
+void carregar_boot(){ 
     //  Abre o arquivo escolhido antes pelo usuário
     //  Lê o arquivo, armazena o boot record numa struct
     //  Printa os dados armazenadosna struct
 
     FILE *file;
     file = fopen(nome_arquivo, "rb");
-    fread(&teste2, sizeof(boot_record), 1, file);
+    fread(&br_sistema, sizeof(boot_record), 1, file);
     fclose(file);
 
-    printf("Dados lidos: \nbytes_por_bloco: %hu",teste2.bytes_por_bloco);
-    printf("\nblocos reservados: %hu",teste2.blocos_reservados);
-    printf("\nnum blocos livres: %i",teste2.num_blocos_livres);
-    printf("\nnum blocos tabela de entradas: %i",teste2.num_blocos_tabela_entradas);
-    printf("\nnum blocos secao de dados: %i",teste2.num_blocos_secao_dados);
-    printf("\nnum blocos totais: %i",teste2.num_blocos_totais);
-    printf("\nnum blocos reservados raiz: %i",teste2.num_blocos_reservados_raiz);
-    printf("\nquant entradas sistema: %i",teste2.quant_entradas_sistema);
-    printf("\ncabeca da lista: %i\n",teste2.cabeca_lista);
+    printf("Dados lidos: \nbytes_por_bloco: %hu", br_sistema.bytes_por_bloco);
+    printf("\nblocos reservados: %hu", br_sistema.blocos_reservados);
+    printf("\nnum blocos livres: %i", br_sistema.num_blocos_livres);
+    printf("\nnum blocos tabela de entradas: %i", br_sistema.num_blocos_tabela_entradas);
+    printf("\nnum blocos secao de dados: %i", br_sistema.num_blocos_secao_dados);
+    printf("\nnum blocos totais: %i", br_sistema.num_blocos_totais);
+    printf("\nnum blocos reservados raiz: %i", br_sistema.num_blocos_reservados_raiz);
+    printf("\nquant entradas sistema: %i", br_sistema.quant_entradas_sistema);
+    printf("\ncabeca da lista: %i\n", br_sistema.cabeca_lista);
+}
+
+
+void carregar_lista_blocos_livres(){
+    //  Abre o arquivo escolhido pelo usuário
+    //  Lê o arquivo, armazena a lista de blocos livros na memória
+    //  Printa os dados armazenados na lista
+
+    
+    // Ok. Possivel ordem de fazer as coisas:
+    // Abre o arquivo
+    // fseek pro começo da seção da lista de blocos livres
+    // pega o valor do número de blocos da tabela de entradas
+    // aloca espaço em memória blocos_entrada * BLOCK_SIZE
+        // usando o ponteiro global entradas_sistema
+        // podse: entradas_sistema = (entrada)malloc(blocos_entrada * sizeof(bloco)))
+        // Daí vai fazer o mesmo esquema feito anteriormente, de ir adicionando indices de array nesse espaço da memória
+
+    // Quando esses valores estiverem carregador, tudo ok pode retornar.
+    // Talvez ate printar eles na tela enquanto pega cada um
+
+    // Dai depois disso tem que fazer a função de colocar eles da memória pro arquivo.
+
+
+    FILE *file;
+    file = fopen(nome_arquivo, "rb");       // Abrimos o arquivo, para pegar a tabela de entradas dele
+    uint32_t blocos_tabela = br_sistema.num_blocos_tabela_entradas; // Armazenamos o tamanho em blocos da tabela de entradas
+    size_t tamanho_tabela_entradas = blocos_tabela * BLOCK_SIZE;    // Armazenamos o tamanho em bytes da tabela de entradas
+
+    free(entrada_sistema);                  // Liberamos a alocação anterior da tabela de entradas do sistema
+    
+    entrada_sistema = (entrada *)malloc(tamanho_tabela_entradas);   // Alocamos espaço em memória para a tabela
+    if(entrada_sistema == NULL){
+        printf("Erro ao alocar memoria para a tabela de entradas!");
+        return 1;
+    }
+
+    // Agora, fseek no arquivo para o começo da tabela de entradas
+    // Depois for loop que vai lendo o coiso
+
+    fseek(file, 1 * BLOCK_SIZE, SEEK_SET);  // Movemos o ponteiro de leitura para o começo da tabela de entradas
+
+    fread(entrada_sistema, tamanho_tabela_entradas, 1, file);       // Lê todos os arquivos da tabela de entrada, armazena eles na lista
+
+
+    fclose(file);
+
+
+    // Agora é pra tudo estar dentro dessa lista! Printamos ela por conveniencia:
+    // Primeiro calculamos o tamanho do array:
+    int tamanho = blocos_tabela * 16;   // 512 / 32 = 16 entradas por bloco
+
+    printf("\n\n ----------- TABELA DE ENTRADAS -----------");
+    for(int i = 0; i < tamanho; i++){
+        printf("\nEntrada %i:", i);
+        printf("\nStatus: %c", entrada_sistema[i].status);
+        printf("\nNome: %s", entrada_sistema[i].nome);
+        printf("\nExtensão: ", entrada_sistema[i].ext);
+        printf("\nTipo: %c", entrada_sistema[i].tipo);
+        printf("\nPrimeiro bloco: %u", entrada_sistema[i].primeiro_bloco);
+        printf("\nTamanho (bytes): %u", entrada_sistema[i].tamanho);
+        printf("\nBlocos usados: %u", entrada_sistema[i].numero_blocos_usados);
+        printf("\nPadding: %u", entrada_sistema[i].padding);
+    }
+
+    return;
+}
+
+
+void carregar_secao_dados(){
+    //  Abre o arquivo escolhido pelo usuário
+    //  Lê o arquivo, armazena a seção de dados na memória
+    //  Printa os blocos armazenados
+
+    
+    // Ok. Possivel ordem de fazer as coisas:
+    // Abre o arquivo
+    // fseek pro começo do bloco da seção de dados
+    // pega o valor do número de blocos da seção de dados
+
+    // aloca espaço em memória blocos_dados * BLOCK_SIZE
+        // usando o ponteiro global blocos_sistema
+        // podse: blocos_sistema = (bloco *)malloc(blocos_dados * sizeof(bloco)))
+        // Daí vai fazer o mesmo esquema feito anteriormente, de ir adicionando indices de array nesse espaço da memória
+
+    // Quando esses valores estiverem carregados, tudo ok pode retornar.
+    // Talvez ate printar eles na tela enquanto pega cada um
+
+    // Dai depois disso tem que fazer a função de colocar eles da memória pro arquivo.
+
+
+
+
+    FILE *file;
+    file = fopen(nome_arquivo, "rb");       // Abrimos o arquivo, para pegar a tabela de entradas dele
+    uint32_t blocos_dados = br_sistema.num_blocos_secao_dados;  // Armazenamos o tamanho em blocos da seção de dados
+    size_t tamanho_secao_dados = blocos_dados * BLOCK_SIZE;     // Armazenamos o tamanho em bytes da seção de dados
+    uint32_t inicio_dados = br_sistema.blocos_reservados + br_sistema.num_blocos_tabela_entradas;   // Endereço do começo da seção de dados
+
+    free(dados_sistema);                    // Liberamos a alocação anterior da seção de dados do sistema
+    
+    dados_sistema = (bloco *)malloc(tamanho_secao_dados);       // Alocamos espaço em memória para a tabela
+
+    if(dados_sistema == NULL){
+        printf("Erro ao alocar memoria para a seção de dados!");
+        return 1;
+    }
+
+    // Agora, fseek no arquivo para o começo da seção de dados
+    // Depois a gente lê tudo e armazena na memória alocada anteriormente
+
+    fseek(file, inicio_dados * BLOCK_SIZE, SEEK_SET);       // Movemos o ponteiro de leitura para o começo da seção de dados
+
+    fread(dados_sistema, tamanho_secao_dados, 1, file);     // Lê todos os blocos da seção de dados, armazena eles na lista
+
+    fclose(file);
+
+
+    // Agora é pra tudo estar dentro dessa lista! Printamos ela por conveniencia:
+    printf("\n\n ----------- SECAO DE DADOS -----------");
+
+    for(int i = 0; i < blocos_dados; i++){                  // Iteramos por cada bloco da seção de dados
+        printf("\nBloco %i:\n", i + inicio_dados);
+        for (int j = 0; j < BLOCK_SIZE; j++) {              // Iteramos por cada byte do bloco
+            printf("%02X ", (unsigned char)dados_sistema[i].conteudo[j]);
+            if ((j + 1) % 16 == 0) {
+                printf("\n");                               // Quebra de linha a cada 16 bytes, mesmo estilo do HexEd.it
+            }
+        }
+        printf("\n\n");
+    }
+
+    return;
+
+
+
+
 
 
 }
@@ -315,7 +468,7 @@ int main(){
             case 2:
                 //função de ler boot para outras execuções
                 get_nomeArquivo();
-	            ler_boot();
+	            carregar_boot();
                 break;
             
             case 3:
@@ -340,14 +493,14 @@ int main(){
     //lista todos os blocos livres do sistema
     lista_livres = listar_blocos_livres(nome_arquivo);
     printf("listando blocos livres\n");
-    for(i = 0; i < teste2.num_blocos_livres; i++){
+    for(i = 0; i < br_sistema.num_blocos_livres; i++){
         printf("%u ",lista_livres[i]);
     }
 
     //testar ordenação de lista
     lista_ordenado = ordenar_lista(lista_livres);
     printf("\nlistando ordenado\n");
-    for(i = 0; i < teste2.num_blocos_livres; i++){
+    for(i = 0; i < br_sistema.num_blocos_livres; i++){
         printf("%u ",lista_ordenado[i]);
     }
 

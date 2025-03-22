@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#define BLOCK_SIZE 512
 
 struct Boot_record{
     unsigned short bytes_por_bloco;             // 2 bytes
@@ -14,6 +15,30 @@ struct Boot_record{
     uint32_t cabeca_lista;                      // 4 bytes      Não teria que usar uint32_t em tudo?            
     unsigned int quant_entradas_sistema;        // 4 bytes, 
 };
+
+
+struct Entrada{
+    char status;                                // 1 byte para status
+    char nome[12];                              // 12 bytes, nome do arquivo
+    char ext[4];                                // 4 bytes, extensão
+    char tipo;
+    unsigned int primeiro_bloco;
+    unsigned int tamanho;
+    unsigned int numero_blocos_usados;
+    unsigned short padding;
+};
+
+
+struct Bloco{
+    char conteudo[BLOCK_SIZE];
+};
+
+typedef struct Boot_record boot_record;
+typedef struct Entrada entrada;
+typedef struct Bloco bloco;
+
+
+
 
 
 /*
@@ -33,17 +58,6 @@ struct Boot_record{
 */
 
 
-struct Entrada{
-    char status;                                // 1 byte para status
-    char nome[12];                              // 12 bytes, nome do arquivo
-    char ext[4];                                // 4 bytes, extensão
-    char tipo;
-    unsigned int primeiro_bloco;
-    unsigned int tamanho;
-    unsigned int numero_blocos_usados;
-    unsigned short padding;
-};
-
 
 /*
     Entradas da tabela, só que usando uint_t:
@@ -59,12 +73,3 @@ struct Boot_record{
     uint16_t foo;                               // 2 bytes, completa 32 bytes
 };
 */
-
-
-struct Bloco{
-    char* conteudo;
-};
-
-typedef struct Boot_record boot_record;
-typedef struct Entrada entrada;
-typedef struct Bloco bloco;
