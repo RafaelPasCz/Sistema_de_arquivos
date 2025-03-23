@@ -8,17 +8,17 @@ struct Boot_record{
     unsigned short bytes_por_bloco;             // 2 bytes
     unsigned short blocos_reservados;           // 2 bytes
     unsigned int num_blocos_livres;             // 4 bytes      O que que é isso? cabeca_lista deve ir aqui
-    unsigned int num_blocos_tabela_entradas;    // 4 bytes          Não sei, acho que inventei sem querer, achei que esta no boot record
+    unsigned int num_blocos_tabela_entradas;    // 4 bytes
     unsigned int num_blocos_secao_dados;        // 4 bytes
     unsigned int num_blocos_totais;             // 4 bytes
     unsigned int num_blocos_reservados_raiz;    // 4 bytes
-    uint32_t cabeca_lista;                      // 4 bytes      Não teria que usar uint32_t em tudo?
-    unsigned int quant_entradas_sistema;        // 4 bytes,         tentei fazer isso, mas tava dando bosta na hora de fazer aritmetica com os valores
+    uint32_t cabeca_lista;                      // 4 bytes      Não teria que usar uint32_t em tudo?            
+    unsigned int quant_entradas_sistema;        // 4 bytes, 
 } __attribute__((packed));
 
 
 struct Entrada{
-    unsigned char status;                       // 1 byte para status
+    char status;                                // 1 byte para status
     char nome[12];                              // 12 bytes, nome do arquivo
     char ext[4];                                // 4 bytes, extensão
     char tipo;
