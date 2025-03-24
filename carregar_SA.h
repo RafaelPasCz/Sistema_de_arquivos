@@ -18,7 +18,6 @@ void carregar_boot(){
     printf("\nnum blocos tabela de entradas: %i", br_sistema.num_blocos_tabela_entradas);
     printf("\nnum blocos secao de dados: %i", br_sistema.num_blocos_secao_dados);
     printf("\nnum blocos totais: %i", br_sistema.num_blocos_totais);
-    printf("\nnum blocos reservados raiz: %i", br_sistema.num_blocos_reservados_raiz);
     printf("\nquant entradas sistema: %i", br_sistema.quant_entradas_sistema);
     printf("\ncabeca da lista: %i\n", br_sistema.cabeca_lista);
 }
@@ -71,19 +70,19 @@ int carregar_lista_blocos_livres(){
     // Primeiro calculamos o tamanho do array:
     int tamanho = blocos_tabela * 16;   // 512 / 32 = 16 entradas por bloco
 
-    printf("\n\n ----------- TABELA DE ENTRADAS -----------");
-    for(int i = 0; i < tamanho; i++){
-        printf("\n\n ------- Entrada %i: -------", i);
-        //printf("Tamanho da struct: %llu bytes\n", sizeof(entrada_sistema[i]));
-        printf("\nStatus: 0x%X", entrada_sistema[i].status);
-        printf("\nNome: %.12s", entrada_sistema[i].nome);
-        printf("\nExtensao: %.4s", entrada_sistema[i].ext);
-        printf("\nTipo: 0x%X", entrada_sistema[i].tipo);
-        printf("\nPrimeiro bloco: %u", entrada_sistema[i].primeiro_bloco);
-        printf("\nTamanho (bytes): %u", entrada_sistema[i].tamanho);
-        printf("\nBlocos usados: %u", entrada_sistema[i].numero_blocos_usados);
-        printf("\nPadding: %u", entrada_sistema[i].padding);
-    }
+    //printf("\n\n ----------- TABELA DE ENTRADAS -----------");
+    //for(int i = 0; i < tamanho; i++){
+    //    printf("\n\n ------- Entrada %i: -------", i);
+    //    //printf("Tamanho da struct: %llu bytes\n", sizeof(entrada_sistema[i]));
+    //    printf("\nStatus: 0x%X", entrada_sistema[i].status);
+    //    printf("\nNome: %.12s", entrada_sistema[i].nome);
+    //    printf("\nExtensao: %.4s", entrada_sistema[i].ext);
+    //    printf("\nTipo: 0x%X", entrada_sistema[i].tipo);
+    //    printf("\nPrimeiro bloco: %u", entrada_sistema[i].primeiro_bloco);
+    //    printf("\nTamanho (bytes): %u", entrada_sistema[i].tamanho);
+    //    printf("\nBlocos usados: %u", entrada_sistema[i].numero_blocos_usados);
+    //    printf("\nPadding: %u", entrada_sistema[i].padding);
+    //}
 
     return 0;
 }
@@ -135,19 +134,19 @@ int carregar_secao_dados(){
 
     fclose(file);
 
-    // Agora é pra tudo estar dentro dessa lista! Printamos ela por conveniencia:
-    printf("\n\n ----------- SECAO DE DADOS -----------");
-
-    for(uint32_t i = 0; i < blocos_dados; i++){                  // Iteramos por cada bloco da seção de dados
-        printf("\nBloco %i:\n", i + inicio_dados);
-        for (int j = 0; j < BLOCK_SIZE; j++) {                  // Iteramos por cada byte do bloco
-            printf("%02X ", (unsigned char)dados_sistema[i].conteudo[j]);
-            if ((j + 1) % 16 == 0) {
-                printf("\n");                                   // Quebra de linha a cada 16 bytes, mesmo estilo do HexEd.it
-            }
-        }
-        printf("\n\n");
-    }
+    //// Agora é pra tudo estar dentro dessa lista! Printamos ela por conveniencia:
+    //printf("\n\n ----------- SECAO DE DADOS -----------");
+    //
+    //for(uint32_t i = 0; i < blocos_dados; i++){                  // Iteramos por cada bloco da seção de dados
+    //    printf("\nBloco %i:\n", i + inicio_dados);
+    //    for (int j = 0; j < BLOCK_SIZE; j++) {                  // Iteramos por cada byte do bloco
+    //        printf("%02X ", (unsigned char)dados_sistema[i].conteudo[j]);
+    //        if ((j + 1) % 16 == 0) {
+    //            printf("\n");                                   // Quebra de linha a cada 16 bytes, mesmo estilo do HexEd.it
+    //        }
+    //    }
+    //    printf("\n\n");
+    //}
 
     return 0;
 }

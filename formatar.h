@@ -3,17 +3,15 @@
 #include "structs.h"
 
 
-
 void inicializar_secao_dados() {
     //  Recebe o nome de um arquivo, abre ele
-    //  Abre ele
     //  Obtém o começo, e o tamanho da seção de dados
     //  A partir do primeiro endereço, percorre a seção de dados, criando a lista de blocos livres
         // Adiciona um ponteiro de 4 bytes para o próximo bloco, no começo de cada bloco
     //  Escreve no arquivo, e libera os espaços alocados
 
     FILE *file;
-    uint32_t inicio_secao = br_sistema.blocos_reservados + br_sistema.num_blocos_tabela_entradas;   // Obtem o endereço do primeiro bloco da seção de dados
+    uint32_t inicio_secao = br_sistema.blocos_reservados;   // Obtem o endereço do primeiro bloco da seção de dados
     uint32_t num_blocos = br_sistema.num_blocos_secao_dados;    // Obtem o tamnho total da seção de dados
 
     file = fopen(nome_arquivo, "rb+");
@@ -32,6 +30,7 @@ void inicializar_secao_dados() {
         } else {
             proximo_endereco = endereco_atual + 1; //proximo endereço é apenas o atual + 1
         }
+        //printf("\nProximo endereco: %i", proximo_endereco);
 
         unsigned char bytes[4]; //fazemos a conversão de um inteiro para 4 bytes
         bytes[0] = (proximo_endereco >> 0) & 0xFF;
@@ -92,7 +91,7 @@ int formatar(){
     br_sistema.bytes_por_bloco = BLOCK_SIZE;     // Quantidade fixa de blocos por byte.
     br_sistema.blocos_reservados = 1;            // Quantidade de blocos reservados: 1 (boot record) (adicionar mais 1? root dir?)
     br_sistema.quant_entradas_sistema = 0;       // inicia em 0 porque o sistema está vazio
-    br_sistema.num_blocos_reservados_raiz = 1;   // Numero de blocos reservados para o root directory
+    br_sistema.foo = 1;                          // Numero de blocos reservados para o root directory
     br_sistema.num_blocos_totais = tamanho_disco/br_sistema.bytes_por_bloco;  // separamos o disco em blocos
 
     tamanho_total_entradas = n_entradas * sizeof(entrada);          // tamanho total da tabela de entradas em bytes

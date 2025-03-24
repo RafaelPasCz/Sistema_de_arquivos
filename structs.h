@@ -21,7 +21,7 @@ struct Boot_record{
     unsigned int num_blocos_tabela_entradas;    // 4 bytes 
     unsigned int num_blocos_secao_dados;        // 4 bytes
     unsigned int num_blocos_totais;             // 4 bytes
-    unsigned int num_blocos_reservados_raiz;    // 4 bytes
+    unsigned int foo;                           // 4 bytes, espaço vazio
     uint32_t cabeca_lista;                      // 4 bytes      
     unsigned int quant_entradas_sistema;        // 4 bytes,     
 } __attribute__((packed));

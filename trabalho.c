@@ -99,7 +99,7 @@ int main(){
                 while (getchar() != '\n');      // Limpa o buffer
 
                 if (fgets(arquivo, sizeof(arquivo), stdin)) {
-                        arquivo[strcspn(arquivo, "\n")] = '\0';   // Remove o '\n' do final
+                    arquivo[strcspn(arquivo, "\n")] = '\0';   // Remove o '\n' do final
                 }   // Lemos o nome do arquivo, junto com alguns tratamentos de strings. Cortesia do StackOverflow
 
                 printf("Arquivo escolhido: %s\n", arquivo);

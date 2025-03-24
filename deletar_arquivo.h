@@ -36,8 +36,6 @@ void deletar_arquivo(uint32_t index) {
     //  Último aponta para onde o bloco_livre_anterior apontava.
     
 
-
-
     uint32_t cabeca_lista = br_sistema.cabeca_lista;        // Primeiro bloco livre
     int offset = 1 + br_sistema.num_blocos_tabela_entradas; // Offset a ser utilizado quando formos acessar o vetor dados_sistema[]
 
@@ -110,6 +108,13 @@ void deletar_arquivo(uint32_t index) {
 
     // Atualiza o número de blocos livres no boot record
     br_sistema.num_blocos_livres += entrada_sistema[index].numero_blocos_usados;
+
+
+    // Caso específico: se o ultimo bloco do arquivo deletado estiver no finaldo sistema de arquivos, ele não colocaria 0xFFFFFFFF
+    if(bloco_fim_deletado == (br_sistema.num_blocos_totais - 1)){
+        uint32_t fim_lista = 0xFFFFFFFF;
+        memcpy(dados_sistema[bloco_fim_deletado - offset].conteudo, &fim_lista, sizeof(uint32_t));
+    }
 
     // Limpa os dados da entrada na tabela de entradas
     // memset(&entrada_sistema[index], 0, sizeof(entrada));
