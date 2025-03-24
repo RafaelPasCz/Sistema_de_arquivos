@@ -21,8 +21,8 @@ int main(){
         printf("=--[1] Formatar uma particao a ser simulada\n");
         printf("=--[2] Carregar uma particao simulada salva (HD -> RAM)\n");
         printf("=--[3] Salvar uma particao simulada (RAM -> HD)\n");
-        printf("=--[4] Carregar arquivo do disco para sistema simulado (HD -> RAM)\n");
-        printf("=--[5] Carregar arquivo do disco para sistema simulado (RAM -> HD)\n");
+        printf("=--[4] Carregar arquivo do disco para o sistema simulado (HD -> RAM)\n");
+        printf("=--[5] Carregar arquivo do sistema simulado para o disco(RAM -> HD)\n");
         printf("=--[0] Sair\nR: ");
         scanf("%i", &operacao);
 
@@ -41,23 +41,16 @@ int main(){
                 // Pega um sistema de arquivos salvo no disco, carrega ele na memória
                 get_nomeArquivo();
                 carregar_sistema_arquivos();
-	            carregar_boot();
-                carregar_lista_blocos_livres();
-                carregar_secao_dados();
-
                 break;
 
             case 3:
                 // Pega o sistema de arquivos carregado na memória, salva ele no disco
                 get_nomeArquivo();
                 salvar_sistema_arquivos();
-
-
-
                 break;
 
             case 4:
-                //função para copiar arquivo do disco para o sistema
+                // Funções para copiar arquivo do disco para o sistema
                 printf("=-- Insira o nome do arquivo a ser copiado\nR: ");
 
                 while (getchar() != '\n');      // Limpa o buffer
@@ -71,6 +64,10 @@ int main(){
                 escrever_entrada(arquivo);
 
                 break;
+
+            case 5:
+                // Funções para copiar um arquivo 
+                
 
             case 0:
                 printf("Tchau!\n");

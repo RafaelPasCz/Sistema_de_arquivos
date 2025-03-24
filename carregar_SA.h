@@ -6,10 +6,10 @@ void carregar_boot(){
     //  Abre o arquivo escolhido antes pelo usuário
     //  Lê o arquivo, armazena o boot record numa struct
     //  Printa os dados armazenadosna struct
-
-    FILE *file;
+    memset(&br_sistema, 0, sizeof(boot_record));                    // Preenchemos o espaço da memória de zeros
+    FILE *file;                                                     // Abrimos o arquivo a ser lido
     file = fopen(nome_arquivo, "rb");
-    fread(&br_sistema, sizeof(boot_record), 1, file);
+    fread(&br_sistema, sizeof(boot_record), 1, file);               // Escrevemos o boot record do arquivo na memória
     fclose(file);
 
     printf("Dados lidos: \nbytes_por_bloco: %hu", br_sistema.bytes_por_bloco);
@@ -44,11 +44,11 @@ int carregar_lista_blocos_livres(){
     // Dai depois disso tem que fazer a função de colocar eles da memória pro arquivo.
 
     FILE *file;
-    file = fopen(nome_arquivo, "rb");       // Abrimos o arquivo, para pegar a tabela de entradas dele
+    file = fopen(nome_arquivo, "rb");                               // Abrimos o arquivo, para pegar a tabela de entradas dele
     uint32_t blocos_tabela = br_sistema.num_blocos_tabela_entradas; // Armazenamos o tamanho em blocos da tabela de entradas
     size_t tamanho_tabela_entradas = blocos_tabela * BLOCK_SIZE;    // Armazenamos o tamanho em bytes da tabela de entradas
 
-    free(entrada_sistema);                  // Liberamos a alocação anterior da tabela de entradas do sistema
+    free(entrada_sistema);                                          // Liberamos a alocação anterior da tabela de entradas do sistema
 
     entrada_sistema = (entrada *)malloc(tamanho_tabela_entradas);   // Alocamos espaço em memória para a tabela
     if(entrada_sistema == NULL){
@@ -56,10 +56,12 @@ int carregar_lista_blocos_livres(){
         return 1;
     }
 
+    memset(entrada_sistema, 0, tamanho_tabela_entradas);            // Enchemos o espaço da memória de zeros
+
     // Agora, fseek no arquivo para o começo da tabela de entradas
     // Depois for loop que vai lendo o coiso
 
-    fseek(file, 1 * BLOCK_SIZE, SEEK_SET);  // Movemos o ponteiro de leitura para o começo da tabela de entradas
+    fseek(file, 1 * BLOCK_SIZE, SEEK_SET);                          // Movemos o ponteiro de leitura para o começo da tabela de entradas
 
     fread(entrada_sistema, tamanho_tabela_entradas, 1, file);       // Lê todos os arquivos da tabela de entrada, armazena eles na lista
 
@@ -75,7 +77,7 @@ int carregar_lista_blocos_livres(){
         printf("Tamanho da struct: %llu bytes\n", sizeof(entrada_sistema[i]));
         printf("\nStatus: %c", entrada_sistema[i].status);
         printf("\nNome: %.12s", entrada_sistema[i].nome);
-        printf("\nExtensao %.4s: ", entrada_sistema[i].ext);
+        printf("\nExtensao: %.4s", entrada_sistema[i].ext);
         printf("\nTipo: %u", entrada_sistema[i].tipo);
         printf("\nPrimeiro bloco: %u", entrada_sistema[i].primeiro_bloco);
         printf("\nTamanho (bytes): %u", entrada_sistema[i].tamanho);
@@ -108,12 +110,12 @@ int carregar_secao_dados(){
     // Dai depois disso tem que fazer a função de colocar eles da memória pro arquivo.
 
     FILE *file;
-    file = fopen(nome_arquivo, "rb");       // Abrimos o arquivo, para pegar a tabela de entradas dele
+    file = fopen(nome_arquivo, "rb");                           // Abrimos o arquivo, para pegar a tabela de entradas dele
     uint32_t blocos_dados = br_sistema.num_blocos_secao_dados;  // Armazenamos o tamanho em blocos da seção de dados
     size_t tamanho_secao_dados = blocos_dados * BLOCK_SIZE;     // Armazenamos o tamanho em bytes da seção de dados
     uint32_t inicio_dados = br_sistema.blocos_reservados + br_sistema.num_blocos_tabela_entradas;   // Endereço do começo da seção de dados
 
-    free(dados_sistema);                    // Liberamos a alocação anterior da seção de dados do sistema
+    free(dados_sistema);                                         // Liberamos a alocação anterior da seção de dados do sistema
 
     dados_sistema = (bloco *)malloc(tamanho_secao_dados);       // Alocamos espaço em memória para a tabela
 
@@ -122,12 +124,14 @@ int carregar_secao_dados(){
         return 1;
     }
 
+    memset(dados_sistema, 0, tamanho_secao_dados);              // Enchemos o espaço da memória de zeros
+
     // Agora, fseek no arquivo para o começo da seção de dados
     // Depois a gente lê tudo e armazena na memória alocada anteriormente
 
-    fseek(file, inicio_dados * BLOCK_SIZE, SEEK_SET);       // Movemos o ponteiro de leitura para o começo da seção de dados
+    fseek(file, inicio_dados * BLOCK_SIZE, SEEK_SET);           // Movemos o ponteiro de leitura para o começo da seção de dados
 
-    fread(dados_sistema, tamanho_secao_dados, 1, file);     // Lê todos os blocos da seção de dados, armazena eles na lista
+    fread(dados_sistema, tamanho_secao_dados, 1, file);         // Lê todos os blocos da seção de dados, armazena eles na lista
 
     fclose(file);
 
@@ -136,10 +140,10 @@ int carregar_secao_dados(){
 
     for(uint32_t i = 0; i < blocos_dados; i++){                  // Iteramos por cada bloco da seção de dados
         printf("\nBloco %i:\n", i + inicio_dados);
-        for (int j = 0; j < BLOCK_SIZE; j++) {              // Iteramos por cada byte do bloco
+        for (int j = 0; j < BLOCK_SIZE; j++) {                  // Iteramos por cada byte do bloco
             printf("%02X ", (unsigned char)dados_sistema[i].conteudo[j]);
             if ((j + 1) % 16 == 0) {
-                printf("\n");                               // Quebra de linha a cada 16 bytes, mesmo estilo do HexEd.it
+                printf("\n");                                   // Quebra de linha a cada 16 bytes, mesmo estilo do HexEd.it
             }
         }
         printf("\n\n");

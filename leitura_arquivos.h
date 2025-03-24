@@ -1,4 +1,4 @@
-// Funções envolvidas no processo de cópia de arquivos do HD para o Sistema de Arquivos
+// Funções envolvidas no processo de cópia de arquivos do Disco para o Sistema de Arquivos
 
 #include "structs.h"
 #include "strings.h"
@@ -16,7 +16,7 @@ int procurar_espaco_livre(uint32_t tamanho_blocos){
     // Retorna o ponteiro para o primeiro bloco da nossa sequência
     // Retorna -1 se não houver espaço livre contíguo o suficiente
 
-    int blocos_dados = br_sistema.num_blocos_secao_dados;   // Tamanho em blocos da seção de dados
+    //int blocos_dados = br_sistema.num_blocos_secao_dados;   // Tamanho em blocos da seção de dados
     uint32_t cabeca_lista = br_sistema.cabeca_lista;        // Primeiro bloco livre
     uint32_t sequencia = 1;                                 // Contador que armazena a sequência atual de blocos livres contíguos
     int offset = 1 + br_sistema.num_blocos_tabela_entradas; // Offset a ser utilizado quando formos acessar o vetor dados_sistema[]
@@ -34,31 +34,41 @@ int procurar_espaco_livre(uint32_t tamanho_blocos){
         return -1;
     }
 
+    for (int i = 0; i < 4; i++) {
+        printf(" Cuatro");
+        ptr |= ((uint32_t)(uint8_t)dados_sistema[ptr_bloco - offset].conteudo[i]) << (i * 8);
+    }
+
     // Agora, caminhamos pela lista de blocos livres
     while(ptr_bloco != 0xFFFFFFFF){         // Percorremos a lista até chegar no último bloco livre.
-
+        printf("\nUm");
         // Primeiro vemos se nós já encontramos uma sequência de blocos contíguos grande o suficiente.
         if(sequencia == tamanho_blocos){
+            printf(" Dois");
             break;                          // Encontramos nossa sequência de blocos contíguos! Saímos do loop
         }
-    
+        printf(" Tres");
         // Pegamos os 4 primeiros bytes do bloco atual, para obter o ponteiro para o próximo bloco
         ptr = 0;
         for (int i = 0; i < 4; i++) {
+            printf(" Cuatro");
             ptr |= ((uint32_t)(uint8_t)dados_sistema[ptr_bloco - offset].conteudo[i]) << (i * 8);
         }
 
         // Seguimos para o próximo bloco
         if(ptr == (ptr_bloco + 1)){         // Se o próximo bloco livre está grudado no bloco atual...
+            printf(" Cimco");
             ptr_bloco = ptr;                // Avançamos para o próximo bloco
             sequencia = sequencia + 1;      // Aumentamos em 1 a sequência
         
         }else{                              // Se não...
+            printf(" Seis");
             ptr_fim_anterior = ptr_bloco;   // Armazenamos o final do conjunto contíguo de blocos anterior
             ptr_inicio_atual = ptr;         // Armazenamos o começo da próxima sequência de blocos contígua
             ptr_bloco  = ptr;               // Avançaos para o próximo bloco
             sequencia  = 1;                 // Reiniciamos o contador de sequência
         }
+        printf("\nCabeca: %i, sequencia: %i, ptr: %i, ptr_bloco: %i", cabeca_lista, sequencia, ptr, ptr_bloco);
     }
 
     if(sequencia != tamanho_blocos){        // Se não tivermos encontrado uma sequência contígua de blocos livres...
@@ -76,6 +86,7 @@ int procurar_espaco_livre(uint32_t tamanho_blocos){
 
     // Então, agora vamos religar os ponteiros
     if(ptr_fim_anterior == cabeca_lista){   // Se o arquivo vai ser alocado no lugar que era a cabeça da lista de blocos livres...
+        printf("\nArquivo vai ser alocado na cabeca da lista! cabeca eh: %i, ptr eh %i", cabeca_lista, ptr);
         br_sistema.cabeca_lista = ptr;      // A cabeça passa a apontar para o mesmo local que o final da nossa sequência apontava
     
     }else{                                  // Se não...
@@ -175,14 +186,17 @@ int escrever_entrada(char* arquivo) {
         return 1;                                                    // -1: erro na escrita
     }
 
-    char nome[100], extensao[100], resultado[100];                  // Tratamos o nome do arquivo
+    char nome[100] = {0}, extensao[100] = {0}, resultado[100] = {0};// Tratamos o nome do arquivo
     separar_nome_extensao(arquivo, nome, extensao);                 // Separa o nome do arquivo da extensão
     concatenar_nome_extensao(nome, extensao, resultado);            // Concatena os dois
 
+    memset(&entrada_sistema[entrada_livre], 0, sizeof(entrada));    // Enchemos o espaço da memória de zeros, para o remoto caso de ter lixo
+    
     // Dai por fim, preenchemos a tabela de entradas
     entrada_sistema[entrada_livre].status = 0x01;                   // Preenchemos o status da nova entrada
-    strncpy(entrada_sistema[entrada_livre].nome, resultado, 12);    // Nome do arquivo
-    strncpy(entrada_sistema[entrada_livre].ext, extensao, 4);       // Extensão (até 4 caracteres)
+    memcpy(entrada_sistema[entrada_livre].nome, resultado, 12);     // Nome do arquivo
+    memcpy(entrada_sistema[entrada_livre].ext,  extensao,  4);      // Extensão (até 4 caracteres)
+
     entrada_sistema[entrada_livre].tipo = 0x01;                     // Tipo (0x01 é arquivo)
     entrada_sistema[entrada_livre].primeiro_bloco = primeiro_bloco; // Ponteiro para o primeiro bloco alocado
     entrada_sistema[entrada_livre].tamanho = tamanho;               // Tamanho do arquivo em bytes
@@ -190,6 +204,9 @@ int escrever_entrada(char* arquivo) {
     entrada_sistema[entrada_livre].padding = 0;                     // Padding, coiso extra pra completar os 32 bytes
 
     br_sistema.quant_entradas_sistema++;                            // Aumentamos o contador de arquivos salvados no bot record                 
+
+    //strncpy(entrada_sistema[entrada_livre].nome, resultado, 12);    
+    //strncpy(entrada_sistema[entrada_livre].ext, extensao, 4);
 
     return 0;
 }
