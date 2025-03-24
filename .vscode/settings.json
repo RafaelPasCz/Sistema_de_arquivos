@@ -60,6 +60,11 @@
     "*.sqlbook": "sql",
     "*.ndjson": "jsonl",
     "*.dbclient-js": "javascript",
-    "string.h": "c"
+    "string.h": "c",
+    "stdio.h": "c",
+    "math.h": "c",
+    "stdlib.h": "c",
+    "leitura_arquivos.h": "c",
+    "strings.h": "c"
   }
 }

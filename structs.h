@@ -1,8 +1,18 @@
+// Structs, variáveis globais, e bibliotecas compartilhadas entre todos os headers
+
+#ifndef HEADER_FILE
+#define HEADER_FILE
+#define BLOCK_SIZE 512
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
+#include <math.h>
 
-#define BLOCK_SIZE 512
+
+char nome_arquivo[256];             // Arquivo a ser usado para simular o sistema de arquivos
+
 
 struct Boot_record{
     unsigned short bytes_por_bloco;             // 2 bytes
@@ -38,7 +48,9 @@ typedef struct Entrada entrada;
 typedef struct Bloco bloco;
 
 
-
+boot_record br_sistema;             // boot record do sistema de arquivos em memória
+entrada *entrada_sistema = NULL;    // Lista que armazena a tabela de entradas do sistema de arquivos em memória (alocado com malloc)
+bloco   *dados_sistema = NULL;      // Lista que armazena os blocos da seção de dados do sistema de arquivos em memória
 
 
 /*
@@ -73,3 +85,7 @@ struct Boot_record{
     uint16_t foo;                               // 2 bytes, completa 32 bytes
 };
 */
+
+
+
+#endif
