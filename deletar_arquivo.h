@@ -1,13 +1,13 @@
 #include "structs.h"
 
 
-void deletar_arquivo(int index) {
+void deletar_arquivo(uint32_t index) {
     // Função responsável por deletar um arquivo do sistema de arquivos.
     // Recebe o índice do arquivo a ser deletado, e a função marca a entrada como excluída
     // e libera os blocos usados pelo arquivo.
 
     // Verifica se o índice é válido e se a entrada está em uso
-    if (index < 0 || index >=  br_sistema.num_blocos_tabela_entradas * 16) {
+    if (index >=  br_sistema.num_blocos_tabela_entradas * 16) {
         printf("\nÍndice inválido!\n");
         return;
     }
@@ -23,8 +23,9 @@ void deletar_arquivo(int index) {
 
 
     // Libera os blocos usados pelo arquivo
-    uint32_t bloco_inicio_deletado = entrada_sistema[index].primeiro_bloco;
-    uint32_t numero_blocos_deletado = entrada_sistema[index].numero_blocos_usados;
+    uint32_t bloco_inicio_deletado = entrada_sistema[index].primeiro_bloco;             // Primeiro bloco do arquivo deletado
+    uint32_t numero_blocos_deletado = entrada_sistema[index].numero_blocos_usados;      // numero de blocos do arquivo deletado
+    uint32_t bloco_fim_deletado = bloco_inicio_deletado + numero_blocos_deletado - 1;   // Último bloco do arquivo deletado
 
     // Agora, o que dá pra fazer:
     //  Percorrer a lista de blocos livres
@@ -53,12 +54,14 @@ void deletar_arquivo(int index) {
 
     // Agora, caminhamos pela lista de blocos livres
     while(ptr_bloco != 0xFFFFFFFF){         // Percorremos a lista até chegar no último bloco livre.
-        // Primeiro vemos se nós já encontramos uma sequência de blocos contíguos grande o suficiente.
-        if(ptr > ){
-            break;                          // Encontramos nossa sequência de blocos contíguos! Saímos do loop
+        // Primeiro vemos se nós já passamos da localização dos blocos deletados
+        if(ptr > bloco_inicio_deletado){
+            printf("\nPassou! ptr %i, e bloco %i", ptr, bloco_inicio_deletado);
+            break;                          // Nós já passamos dele! Saímos do loop
         }
+
         // Pegamos os 4 primeiros bytes do bloco atual, para obter o ponteiro para o próximo bloco
-        ptr = 0;
+        ptr = 0;                            // Como na aritmetica abaixo usamos um OR, devemos primeiro zerar ptr
         for (int i = 0; i < 4; i++) {
             ptr |= ((uint32_t)(uint8_t)dados_sistema[ptr_bloco - offset].conteudo[i]) << (i * 8);
         }
@@ -66,38 +69,41 @@ void deletar_arquivo(int index) {
         // Seguimos para o próximo bloco
         if(ptr == (ptr_bloco + 1)){         // Se o próximo bloco livre está grudado no bloco atual...
             ptr_bloco = ptr;                // Avançamos para o próximo bloco
-            sequencia = sequencia + 1;      // Aumentamos em 1 a sequência
         
         }else{                              // Se não...
             ptr_fim_anterior = ptr_bloco;   // Armazenamos o final do conjunto contíguo de blocos anterior
             ptr_inicio_atual = ptr;         // Armazenamos o começo da próxima sequência de blocos contígua
             ptr_bloco  = ptr;               // Avançaos para o próximo bloco
-            sequencia  = 1;                 // Reiniciamos o contador de sequência
         }
-        printf("\nCabeca: %i, sequencia: %i, ptr: %i, ptr_bloco: %i", cabeca_lista, sequencia, ptr, ptr_bloco);
+        printf("\nCabeca: %i, ptr: %i, ptr_bloco: %i", cabeca_lista, ptr, ptr_bloco);
     }
 
 
+    // Obtivemos os valores que precisávamos. Agora basta reconectar os ponteiros
+    // Agora, temos:
+        //  ptr_inicio_atual: 
+        //  ptr_bloco       : o último bloco da sequência contígua de blocos que vem antes do arquivo deletado
+        //  ptr             : o primeiro bloco da sequência contígua de blocos que vem depois do arquivo deletado
+        //  ptr_fim_anterior: o último bloco da sequência 2 antes do arquivo
 
+    // Então, agora vamos religar os ponteiros
+    
+    // Primeiro:
+        //  O bloco representado por ptr_bloco
+        //  O ponteiro dele deve ser alterado para bloco_inicio_deletado
+    memcpy(dados_sistema[ptr_bloco - offset].conteudo, &bloco_inicio_deletado, sizeof(uint32_t));   
+        // Agora, o arquivo deletado faz parte da lista de blocos livres
+        
+    // Segundo:
+    //  Dentro do arquivo deletado, conectamos os primeiros 4 bytes, fazendo um ponteiro que vai de um para o outro
+    for (uint32_t i = bloco_inicio_deletado; i < bloco_fim_deletado; i++) {
+        uint32_t proximo_bloco = i + 1;
+        memcpy(dados_sistema[i - offset].conteudo, &proximo_bloco, sizeof(uint32_t));
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    // Terceiro:
+        //  O último bloco do arquivo deletado vai apontar para ptr
+    memcpy(dados_sistema[bloco_fim_deletado - offset].conteudo, &ptr, sizeof(uint32_t));
 
     // Atualiza o número de blocos livres no boot record
     br_sistema.num_blocos_livres += entrada_sistema[index].numero_blocos_usados;

@@ -47,6 +47,7 @@ int main(){
     // unsigned int i = 0;
     
     int operacao = 0, continuar = 1;
+    uint32_t index;
     char arquivo[256];
 	printf("hello world\n");
 
@@ -114,7 +115,6 @@ int main(){
                 break;
 
             case 7:
-                int index;
                 printf("=-- Insira o índice do arquivo a ser deletado (conforme listagem)\nR: ");
                 scanf("%i", &index);
                 deletar_arquivo(index);
