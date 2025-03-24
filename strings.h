@@ -25,6 +25,7 @@ void get_nomeArquivo(){
 void separar_nome_extensao(const char *entrada, char *nome, char *extensao) {
     // Recebe um nome de arquivo
     // Separa o nome da extensão (até 4 chars)
+    // Peguei do stackoverflow
 
     const char *ultima_barra = strrchr(entrada, '/');       // Encontra a última barra
     if(!ultima_barra){

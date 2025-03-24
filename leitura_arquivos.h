@@ -34,35 +34,28 @@ int procurar_espaco_livre(uint32_t tamanho_blocos){
         return -1;
     }
 
-    for (int i = 0; i < 4; i++) {
-        printf(" Cuatro");
+    for (int i = 0; i < 4; i++) {           // Pegamos o ponteiro armazenado pela cabeça da lista. Isso estava aqui antes?
         ptr |= ((uint32_t)(uint8_t)dados_sistema[ptr_bloco - offset].conteudo[i]) << (i * 8);
     }
 
     // Agora, caminhamos pela lista de blocos livres
     while(ptr_bloco != 0xFFFFFFFF){         // Percorremos a lista até chegar no último bloco livre.
-        printf("\nUm");
         // Primeiro vemos se nós já encontramos uma sequência de blocos contíguos grande o suficiente.
         if(sequencia == tamanho_blocos){
-            printf(" Dois");
             break;                          // Encontramos nossa sequência de blocos contíguos! Saímos do loop
         }
-        printf(" Tres");
         // Pegamos os 4 primeiros bytes do bloco atual, para obter o ponteiro para o próximo bloco
         ptr = 0;
         for (int i = 0; i < 4; i++) {
-            printf(" Cuatro");
             ptr |= ((uint32_t)(uint8_t)dados_sistema[ptr_bloco - offset].conteudo[i]) << (i * 8);
         }
 
         // Seguimos para o próximo bloco
         if(ptr == (ptr_bloco + 1)){         // Se o próximo bloco livre está grudado no bloco atual...
-            printf(" Cimco");
             ptr_bloco = ptr;                // Avançamos para o próximo bloco
             sequencia = sequencia + 1;      // Aumentamos em 1 a sequência
         
         }else{                              // Se não...
-            printf(" Seis");
             ptr_fim_anterior = ptr_bloco;   // Armazenamos o final do conjunto contíguo de blocos anterior
             ptr_inicio_atual = ptr;         // Armazenamos o começo da próxima sequência de blocos contígua
             ptr_bloco  = ptr;               // Avançaos para o próximo bloco

@@ -74,11 +74,11 @@ int carregar_lista_blocos_livres(){
     printf("\n\n ----------- TABELA DE ENTRADAS -----------");
     for(int i = 0; i < tamanho; i++){
         printf("\n\n ------- Entrada %i: -------", i);
-        printf("Tamanho da struct: %llu bytes\n", sizeof(entrada_sistema[i]));
-        printf("\nStatus: %c", entrada_sistema[i].status);
+        //printf("Tamanho da struct: %llu bytes\n", sizeof(entrada_sistema[i]));
+        printf("\nStatus: 0x%X", entrada_sistema[i].status);
         printf("\nNome: %.12s", entrada_sistema[i].nome);
         printf("\nExtensao: %.4s", entrada_sistema[i].ext);
-        printf("\nTipo: %u", entrada_sistema[i].tipo);
+        printf("\nTipo: 0x%X", entrada_sistema[i].tipo);
         printf("\nPrimeiro bloco: %u", entrada_sistema[i].primeiro_bloco);
         printf("\nTamanho (bytes): %u", entrada_sistema[i].tamanho);
         printf("\nBlocos usados: %u", entrada_sistema[i].numero_blocos_usados);

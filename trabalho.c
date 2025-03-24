@@ -1,8 +1,43 @@
 #include "leitura_arquivos.h"
-#include "carregar_SA.h"
+#include "escrita_arquivo.h"
+#include "deletar_arquivo.h"
 #include "armazenar_SA.h"
+#include "carregar_SA.h"
 #include "formatar.h"
 
+
+void listar_arquivos() {
+    // Função responsável por listar todos os arquivos presentes no sistema de arquivos.
+    // Percorre a tabela de entradas e exibe as informações de cada arquivo válido.
+
+    printf("\n\n==--- Listagem de Arquivos do Sistema de Arquivos ---==\n");
+
+    int total_entradas = br_sistema.num_blocos_tabela_entradas * 16;            // Calcula o número total de entradas na tabela
+    int count = 0;                                                              // Contagem de arquivos no sistema
+
+    for (int i = 0; i < total_entradas; i++) {
+        // Verifica se a entrada está em uso (status != 0x00 (inexistente) e != 0xE5 (removido))
+        if (entrada_sistema[i].status != 0x00 && entrada_sistema[i].status != 0xE5) {
+            count++;
+
+            // Exibe as informações do arquivo
+            printf("\n=-== Arquivo de Indice: %d ==-=\n", i);
+            printf("Nome: %.12s\n", entrada_sistema[i].nome);
+            printf("Extensao: %.4s\n", entrada_sistema[i].ext);
+            printf("Status: 0x%X\n", entrada_sistema[i].status);
+            printf("Tipo: 0x%X\n", entrada_sistema[i].tipo);
+            printf("Primeiro bloco: %u\n", entrada_sistema[i].primeiro_bloco);
+            printf("Tamanho (bytes): %u\n", entrada_sistema[i].tamanho);
+            printf("Blocos usados: %u\n", entrada_sistema[i].numero_blocos_usados);
+        }
+    }
+
+    if (count == 0) {
+        printf("\n\n+====-- Nenhum arquivo encontrado no sistema de arquivos!\n");
+    } else {
+        printf("\n==---= Total de arquivos encontrados: %d\n =---==", count);
+    }
+}
 
 
 int main(){
@@ -21,8 +56,10 @@ int main(){
         printf("=--[1] Formatar uma particao a ser simulada\n");
         printf("=--[2] Carregar uma particao simulada salva (HD -> RAM)\n");
         printf("=--[3] Salvar uma particao simulada (RAM -> HD)\n");
-        printf("=--[4] Carregar arquivo do disco para o sistema simulado (HD -> RAM)\n");
-        printf("=--[5] Carregar arquivo do sistema simulado para o disco(RAM -> HD)\n");
+        printf("=--[4] Listar os arquivos no Sistema de Arquivos\n");
+        printf("=--[5] Carregar arquivo do disco para o sistema simulado (HD -> RAM)\n");
+        printf("=--[6] Carregar arquivo do sistema simulado para o disco(RAM -> HD)\n");
+        printf("=--[7] Remover um arquivo do Sistema de Arquivos\n");
         printf("=--[0] Sair\nR: ");
         scanf("%i", &operacao);
 
@@ -50,6 +87,11 @@ int main(){
                 break;
 
             case 4:
+                // Lista os arquivos armazenados no sistema de arquivos
+                listar_arquivos();
+                break;
+
+            case 5:
                 // Funções para copiar arquivo do disco para o sistema
                 printf("=-- Insira o nome do arquivo a ser copiado\nR: ");
 
@@ -65,9 +107,18 @@ int main(){
 
                 break;
 
-            case 5:
+            case 6:
                 // Funções para copiar um arquivo 
+                escrever_arquivo();
                 
+                break;
+
+            case 7:
+                int index;
+                printf("=-- Insira o índice do arquivo a ser deletado (conforme listagem)\nR: ");
+                scanf("%i", &index);
+                deletar_arquivo(index);
+                break;
 
             case 0:
                 printf("Tchau!\n");
@@ -76,9 +127,7 @@ int main(){
 
             default:
                 printf("Opcao invalida!\n");
-
         }
-
     }
 
 
