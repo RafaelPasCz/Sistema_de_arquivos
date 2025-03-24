@@ -113,7 +113,7 @@ int carregar_secao_dados(){
     file = fopen(nome_arquivo, "rb");                           // Abrimos o arquivo, para pegar a tabela de entradas dele
     uint32_t blocos_dados = br_sistema.num_blocos_secao_dados;  // Armazenamos o tamanho em blocos da seção de dados
     size_t tamanho_secao_dados = blocos_dados * BLOCK_SIZE;     // Armazenamos o tamanho em bytes da seção de dados
-    uint32_t inicio_dados = br_sistema.blocos_reservados + br_sistema.num_blocos_tabela_entradas;   // Endereço do começo da seção de dados
+    uint32_t inicio_dados = br_sistema.blocos_reservados;   // Endereço do começo da seção de dados
 
     free(dados_sistema);                                         // Liberamos a alocação anterior da seção de dados do sistema
 

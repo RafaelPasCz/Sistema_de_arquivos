@@ -115,7 +115,7 @@ int main(){
                 break;
 
             case 7:
-                printf("=-- Insira o índice do arquivo a ser deletado (conforme listagem)\nR: ");
+                printf("=-- Insira o indice do arquivo a ser deletado (conforme listagem)\nR: ");
                 scanf("%i", &index);
                 deletar_arquivo(index);
                 break;
@@ -129,9 +129,4 @@ int main(){
                 printf("Opcao invalida!\n");
         }
     }
-
-
-
-
-
 }

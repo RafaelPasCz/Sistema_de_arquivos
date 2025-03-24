@@ -19,7 +19,7 @@ void deletar_arquivo(uint32_t index) {
 
     // Marcamos a entrada como excluída
     entrada_sistema[index].status = 0xE5;
-    printf("\nArquivo no índice %d marcado como excluído.\n", index);
+    printf("\nArquivo no indice %d marcado como excluído.\n", index);
 
 
     // Libera os blocos usados pelo arquivo
@@ -47,9 +47,7 @@ void deletar_arquivo(uint32_t index) {
     uint32_t ptr = 0;                                       // Usado em comparações
 
 
-    for (int i = 0; i < 4; i++) {           // Pegamos o ponteiro armazenado pela cabeça da lista
-        ptr |= ((uint32_t)(uint8_t)dados_sistema[ptr_bloco - offset].conteudo[i]) << (i * 8);
-    }
+    ptr = cabeca_lista;                                     // Pegamos o ponteiro armazenado pela cabeça da lista
 
 
     // Agora, caminhamos pela lista de blocos livres
@@ -78,6 +76,9 @@ void deletar_arquivo(uint32_t index) {
         printf("\nCabeca: %i, ptr: %i, ptr_bloco: %i", cabeca_lista, ptr, ptr_bloco);
     }
 
+    if(bloco_inicio_deletado < cabeca_lista){               // Se o primeiro bloco do arquivo deletado vier antes do primeiro da lista...
+        br_sistema.cabeca_lista = bloco_inicio_deletado;
+    }
 
     // Obtivemos os valores que precisávamos. Agora basta reconectar os ponteiros
     // Agora, temos:
@@ -91,7 +92,9 @@ void deletar_arquivo(uint32_t index) {
     // Primeiro:
         //  O bloco representado por ptr_bloco
         //  O ponteiro dele deve ser alterado para bloco_inicio_deletado
-    memcpy(dados_sistema[ptr_bloco - offset].conteudo, &bloco_inicio_deletado, sizeof(uint32_t));   
+    if(ptr != ptr_bloco){   // Não ativa no caso específico aonde o arquivo deletado se torna o novo header da lista 
+        memcpy(dados_sistema[ptr_bloco - offset].conteudo, &bloco_inicio_deletado, sizeof(uint32_t));   
+    }
         // Agora, o arquivo deletado faz parte da lista de blocos livres
         
     // Segundo:
@@ -111,5 +114,5 @@ void deletar_arquivo(uint32_t index) {
     // Limpa os dados da entrada na tabela de entradas
     // memset(&entrada_sistema[index], 0, sizeof(entrada));
 
-    printf("Blocos liberados e lista de blocos livres atualizada.\n");
+    printf("\nBlocos liberados e lista de blocos livres atualizada.\n");
 }

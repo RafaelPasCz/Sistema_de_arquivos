@@ -103,9 +103,8 @@ int formatar(){
         br_sistema.num_blocos_tabela_entradas = (tamanho_total_entradas + br_sistema.bytes_por_bloco - 1) / br_sistema.bytes_por_bloco;
     }
 
-        // TODO: TODO: TODO: TODO: TODO: TODO: TODO: TODO: TODO: TODO: TODO: TODO: |
-        // Refatorar tudo pra que blocos_reservados = total_blocos_reservados!
     total_blocos_reservados = br_sistema.blocos_reservados + br_sistema.num_blocos_tabela_entradas;   // para calcular o inicio da seção de dados
+    br_sistema.blocos_reservados = total_blocos_reservados;
     br_sistema.num_blocos_secao_dados = br_sistema.num_blocos_totais - total_blocos_reservados;
                                             // numero de blocos totais do sistema - (reservados + tabela de entradas)
     br_sistema.num_blocos_livres = br_sistema.num_blocos_secao_dados;
